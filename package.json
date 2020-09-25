@@ -1,0 +1,5 @@
+{
+  "name": "sketches-js",
+  "description": "JavaScript implementation of the distributed quantile sketch algorithm DDSketch",
+  "repository": "https://github.com/DataDog/sketches-js"
+}
