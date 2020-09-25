@@ -5,4 +5,8 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-console.log('Hello, world!');
+describe('has tests', () => {
+    it('should return true', () => {
+        expect(1).toEqual(1);
+    });
+});
