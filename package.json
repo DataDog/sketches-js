@@ -1,5 +1,14 @@
 {
   "name": "sketches-js",
   "description": "JavaScript implementation of the distributed quantile sketch algorithm DDSketch",
-  "repository": "https://github.com/DataDog/sketches-js"
+  "repository": "https://github.com/DataDog/sketches-js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist/"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "typescript": "^4.0.3"
+  }
 }
