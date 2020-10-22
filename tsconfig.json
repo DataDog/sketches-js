@@ -4,11 +4,17 @@
     "module": "commonjs",
     "declaration": true,
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist"
   },
   "include": [
-    "./src"
+    "./src", "./test"
   ]
 }
