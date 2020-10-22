@@ -4,9 +4,4 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2020 Datadog, Inc.
  */
-
-describe('has tests', () => {
-    it('should return true', () => {
-        expect(1).toEqual(1);
-    });
-});
+export { DDSketch } from './ddsketch';

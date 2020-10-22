@@ -4,5 +4,4 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2020 Datadog, Inc.
  */
-
-console.log('Hello, world!');
+export { DDSketch } from './ddsketch';
