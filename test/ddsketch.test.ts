@@ -45,6 +45,17 @@ describe('DDSketch', () => {
         }
     };
 
+    it('can be initialized without parameters', () => {
+        const data = generateIncreasing(5);
+        const sketch = new DDSketch();
+
+        for (const value of data) {
+            sketch.add(value);
+        }
+
+        evaluateSketchAccuracy(sketch, data);
+    });
+
     it('is accurate for multiple sizes and quantiles', () => {
         for (const dataset of datasets) {
             for (const n of testSizes) {

@@ -11,16 +11,20 @@ const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
 const DEFAULT_MIN_VALUE = 1.0e-9;
 
-interface SketchOptions {
+interface SketchConfig {
     /** Number between 0 and 1 (default `0.01`) */
     relativeAccuracy?: number;
     /** Default `2048` */
     binLimit?: number;
     /** Default `1.0e-9` */
     minValue?: number;
-    /** Default `CollapsingLowestDenseStore` */
-    store?: Store;
 }
+
+const defaultConfig: Required<SketchConfig> = {
+    relativeAccuracy: DEFAULT_RELATIVE_ACCURACY,
+    binLimit: DEFAULT_BIN_LIMIT,
+    minValue: DEFAULT_MIN_VALUE
+};
 
 /**
  * A quantile sketch with relative-error guarantees
@@ -42,20 +46,20 @@ export class DDSketch {
     /**
      * Initialize a new DDSketch
      *
-     * @param relativeAccuracy The relative retrieval accuracy (default `0.01`)
+     * @param relativeAccuracy The relative retrieval accuracy
      * @param binLimit The maximum number of bins that `store` can grow to
      * @param minValue The minimum value capable of being stored in the sketch
-     * @param store Where to store values added to the sketch
      */
-    constructor({
-        relativeAccuracy = DEFAULT_RELATIVE_ACCURACY,
-        binLimit = DEFAULT_BIN_LIMIT,
-        minValue = DEFAULT_MIN_VALUE,
-        store = new Store(binLimit)
-    }: SketchOptions) {
+    constructor(
+        {
+            relativeAccuracy = defaultConfig.relativeAccuracy,
+            minValue = defaultConfig.minValue,
+            binLimit = defaultConfig.binLimit
+        } = defaultConfig as SketchConfig
+    ) {
         this.minValue = minValue;
         this.relativeAccuracy = relativeAccuracy;
-        this.store = store;
+        this.store = new Store(binLimit);
 
         const x = (2 * this.relativeAccuracy) / (1 - this.relativeAccuracy);
         this.gamma = 1 + x;
