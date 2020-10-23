@@ -8,8 +8,10 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "jest"
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "lint": "eslint src/**/*",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/jest": "^26.0.14",

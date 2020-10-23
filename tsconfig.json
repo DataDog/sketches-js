@@ -2,13 +2,19 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
+    "noEmit": true,
     "declaration": true,
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist"
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "./src"
+    "./src", "./test"
   ]
 }
