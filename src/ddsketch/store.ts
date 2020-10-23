@@ -98,7 +98,7 @@ export class CollapsingLowestDenseStore implements Store {
         } else {
             const maxKey = Math.min(
                 this.maxKey + getGrowBySize(key - this.maxKey),
-                this.minKey + this.maxBins
+                this.minKey + this.maxBins - 1
             );
             this.bins.push(...new Array(maxKey - this.maxKey).fill(0));
             this.maxKey = maxKey;
