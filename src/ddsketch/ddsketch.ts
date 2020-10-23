@@ -77,7 +77,7 @@ export class DDSketch {
      *
      * @param value The value to be added
      */
-    add(value: number): void {
+    accept(value: number): void {
         const key = this._getKey(value);
         this.store.add(key);
 
@@ -96,30 +96,32 @@ export class DDSketch {
      *
      * @param q A number between `0` and `1` (inclusive)
      */
-    quantile(q: number): number {
-        if (q < 0 || q > 1 || this._count === 0) {
+    getValueAtQuantile(quantile: number): number {
+        if (quantile < 0 || quantile > 1 || this._count === 0) {
             return NaN;
         }
-        if (q === 0) {
+        if (quantile === 0) {
             return this._min;
         }
-        if (q === 1) {
+        if (quantile === 1) {
             return this._max;
         }
 
-        const rank = Math.floor(q * (this._count - 1) + 1);
+        const rank = Math.floor(quantile * (this._count - 1) + 1);
         let key = this.store.keyAtRank(rank);
 
-        let quantile = 0;
+        let computedQuantile = 0;
         if (key < 0) {
             key += this.offset;
-            quantile = (-2 * Math.pow(this.gamma, -key)) / (1 + this.gamma);
+            computedQuantile =
+                (-2 * Math.pow(this.gamma, -key)) / (1 + this.gamma);
         } else if (key > 0) {
             key -= this.offset;
-            quantile = (2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
+            computedQuantile =
+                (2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
         }
 
-        return Math.max(quantile, this._min);
+        return Math.max(computedQuantile, this._min);
     }
 
     /** Calculate the key in the store for a given value */

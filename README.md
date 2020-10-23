@@ -35,19 +35,19 @@ const sketch = new DDSketch({
 ### Add a value to the sketch
 
 ```js
-sketch.add(0);
-sketch.add(3.1415);
-sketch.add(-20);
+sketch.accept(0);
+sketch.accept(3.1415);
+sketch.accept(-20);
 ```
 
 ### Retrieve a value at a given quantile from the sketch
 
 ```js
-sketch.quantile(0)
-sketch.quantile(0.5)
-sketch.quantile(0.9)
-sketch.quantile(0.99)
-sketch.quantile(1)
+sketch.getValueAtQuantile(0)
+sketch.getValueAtQuantile(0.5)
+sketch.getValueAtQuantile(0.9)
+sketch.getValueAtQuantile(0.99)
+sketch.getValueAtQuantile(1)
 ```
 
 ## Algorithm

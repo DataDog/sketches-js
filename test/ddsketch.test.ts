@@ -35,7 +35,7 @@ const getQuantile = (data: number[], quantile: number) => {
 describe('DDSketch', () => {
     const evaluateSketchAccuracy = (sketch: DDSketch, data: number[]) => {
         for (const quantile of testQuantiles) {
-            const sketchQ = sketch.quantile(quantile);
+            const sketchQ = sketch.getValueAtQuantile(quantile);
             const dataQ = getQuantile(data, quantile);
             const error = Math.abs(sketchQ - dataQ);
 
@@ -50,7 +50,7 @@ describe('DDSketch', () => {
         const sketch = new DDSketch();
 
         for (const value of data) {
-            sketch.add(value);
+            sketch.accept(value);
         }
 
         evaluateSketchAccuracy(sketch, data);
@@ -67,7 +67,7 @@ describe('DDSketch', () => {
                 });
 
                 for (const value of data) {
-                    sketch.add(value);
+                    sketch.accept(value);
                 }
 
                 evaluateSketchAccuracy(sketch, data);
