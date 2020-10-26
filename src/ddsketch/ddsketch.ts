@@ -124,6 +124,47 @@ export class DDSketch {
         return Math.max(computedQuantile, this._min);
     }
 
+    merge(sketch: DDSketch): void {
+        if (!this.mergeable(sketch)) {
+            throw new Error(
+                'Cannot merge two DDSketches with different parameters'
+            );
+        }
+
+        if (sketch._count === 0) {
+            return;
+        }
+
+        if (this._count === 0) {
+            this.copy(sketch);
+            return;
+        }
+
+        this.store.merge(sketch.store);
+
+        /* Merge summary stats */
+        this._count += sketch._count;
+        this._sum += sketch._sum;
+        if (sketch._min < this._min) {
+            this._min = sketch._min;
+        }
+        if (sketch._max > this._max) {
+            this._max = sketch._max;
+        }
+    }
+
+    mergeable(sketch: DDSketch): boolean {
+        return this.gamma === sketch.gamma && this.minValue === sketch.minValue;
+    }
+
+    copy(sketch: DDSketch): void {
+        this.store.copy(sketch.store);
+        this._min = sketch._min;
+        this._max = sketch._max;
+        this._count = sketch._count;
+        this._sum = sketch._sum;
+    }
+
     /** Calculate the key in the store for a given value */
     _getKey(value: number): number {
         if (value < -this.minValue) {

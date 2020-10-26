@@ -22,9 +22,9 @@ const datasets = [
 const testSizes = [3, 5, 10, 100, 1000];
 const testQuantiles = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 1];
 
-const sketchRelativeAccuracy = 0.05;
-const sketchBinLimit = 1024;
-const sketchMinValue = 1.0e-9;
+const relativeAccuracy = 0.05;
+const binLimit = 1024;
+const minValue = 1.0e-9;
 
 const getQuantile = (data: number[], quantile: number) => {
     const sortedIncreasingData = data.sort((a, b) => a - b);
@@ -39,9 +39,10 @@ describe('DDSketch', () => {
             const dataQ = getQuantile(data, quantile);
             const error = Math.abs(sketchQ - dataQ);
 
-            expect(
-                error - sketchRelativeAccuracy * Math.abs(dataQ)
-            ).toBeLessThanOrEqual(1e-15);
+            const adjustedError = error - relativeAccuracy * Math.abs(dataQ);
+            const allowedError = 1e-15;
+
+            expect(adjustedError).toBeLessThanOrEqual(allowedError);
         }
     };
 
@@ -61,9 +62,9 @@ describe('DDSketch', () => {
             for (const n of testSizes) {
                 const data = dataset(n);
                 const sketch = new DDSketch({
-                    relativeAccuracy: sketchRelativeAccuracy,
-                    binLimit: sketchBinLimit,
-                    minValue: sketchMinValue
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
                 });
 
                 for (const value of data) {
@@ -73,5 +74,137 @@ describe('DDSketch', () => {
                 evaluateSketchAccuracy(sketch, data);
             }
         }
+    });
+
+    describe('merging sketches', () => {
+        it('allows a sketch with values to be merged into an empty sketch', () => {
+            // `sketch1`: Data is added
+            // `sketch2`: Empty, sketch1 is merged into it
+
+            for (const n of testSizes) {
+                const data = generateIncreasing(n);
+                const sketch1 = new DDSketch({
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
+                });
+
+                for (const value of data) {
+                    sketch1.accept(value);
+                }
+
+                const sketch2 = new DDSketch({
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
+                });
+
+                expect(sketch2._count).toEqual(0);
+
+                sketch2.merge(sketch1);
+
+                expect(sketch2._count).toEqual(sketch1._count);
+                evaluateSketchAccuracy(sketch2, data);
+            }
+        });
+
+        it('allows a sketch with values to be merged into an empty sketch', () => {
+            /**
+             * sketch1: Data is added
+             * sketch2: Empty, sketch1 is merged into it
+             */
+
+            for (const n of testSizes) {
+                const data = generateIncreasing(n);
+                const sketch1 = new DDSketch({
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
+                });
+
+                for (const value of data) {
+                    sketch1.accept(value);
+                }
+
+                const sketch2 = new DDSketch({
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
+                });
+
+                expect(sketch2._count).toEqual(0);
+
+                sketch2.merge(sketch1);
+
+                expect(sketch2._count).toEqual(sketch1._count);
+                evaluateSketchAccuracy(sketch2, data);
+            }
+        });
+
+        it('allows sketches with different lengths to be merged', () => {
+            for (const n of testSizes) {
+                const data = generateIncreasing(n);
+                const sketch1 = new DDSketch({
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
+                });
+                const sketch2 = new DDSketch({
+                    relativeAccuracy,
+                    binLimit,
+                    minValue
+                });
+
+                for (let i = 0; i < n; i++) {
+                    const value = data[i];
+                    if (i % 2 === 0) {
+                        sketch1.accept(value);
+                    } else {
+                        sketch2.accept(value);
+                    }
+                }
+
+                sketch1.merge(sketch2);
+
+                evaluateSketchAccuracy(sketch1, data);
+            }
+        });
+
+        it('does not modify the sketch that is passed in as a parameter', () => {
+            const data1 = generateRandom(100);
+            const data2 = generateRandom(50);
+            const sketch1 = new DDSketch({
+                relativeAccuracy,
+                binLimit,
+                minValue
+            });
+            const sketch2 = new DDSketch({
+                relativeAccuracy,
+                binLimit,
+                minValue
+            });
+
+            for (const value of data1) {
+                sketch1.accept(value);
+            }
+
+            sketch1.merge(sketch2);
+
+            evaluateSketchAccuracy(sketch1, data1);
+
+            /* sketch2 is still empty */
+            expect(sketch2._count).toEqual(0);
+
+            for (const value of data2) {
+                sketch2.accept(value);
+            }
+
+            sketch2.merge(sketch1);
+
+            /* Add additional data to sketch1 that shouldn't be in sketch2 post-merge */
+            sketch1.accept(100000);
+
+            evaluateSketchAccuracy(sketch2, [...data1, ...data2]);
+        });
     });
 });
