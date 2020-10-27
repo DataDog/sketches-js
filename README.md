@@ -50,6 +50,23 @@ sketch.getValueAtQuantile(0.99)
 sketch.getValueAtQuantile(1)
 ```
 
+### Merge sketches
+
+Independent sketches can be merged together, provided that they were initialized with the same `relativeAccuracy` and `minValue`:
+
+```js
+const sketch1 = new DDSketch();
+const sketch2 = new DDSketch();
+
+[1,2,3,4,5].forEach(value => sketch1.accept(value));
+[6,7,8,9,10].forEach(value => sketch2.accept(value));
+
+// `sketch2` is merged into `sketch1`, without modifying `sketch2`
+sketch1.merge(sketch2);
+
+sketch1.getValueAtQuantile(1) // 10
+```
+
 ## Algorithm
 
 DDSketch has relative error guarantees: it computes quantiles with a controlled relative error.

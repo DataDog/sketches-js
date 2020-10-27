@@ -57,6 +57,59 @@ export class CollapsingLowestDenseStore implements Store {
         return this.maxKey;
     }
 
+    merge(store: CollapsingLowestDenseStore): void {
+        if (store.count === 0) {
+            return;
+        }
+
+        if (this.count === 0) {
+            this.copy(store);
+            return;
+        }
+
+        if (this.maxKey > store.maxKey) {
+            if (store.minKey < this.minKey) {
+                this._growLeft(store.minKey);
+            }
+
+            const largestMinKey = Math.max(this.minKey, store.minKey);
+
+            for (let i = largestMinKey; i <= store.maxKey; i++) {
+                this.bins[i - this.minKey] += store.bins[i - store.minKey];
+            }
+
+            if (this.minKey > store.minKey) {
+                const n = sumOfRange(store.bins, 0, this.minKey - store.minKey);
+                this.bins[0] += n;
+            }
+        } else {
+            if (store.minKey < this.minKey) {
+                const temp = [...store.bins];
+                for (let i = this.minKey; i <= this.maxKey; i++) {
+                    temp[i - store.minKey] += this.bins[i - this.minKey];
+                }
+                this.bins = temp;
+                this.maxKey = store.maxKey;
+                this.minKey = store.minKey;
+            } else {
+                this._growRight(store.maxKey);
+                for (let i = store.minKey; i <= store.maxKey; i++) {
+                    this.bins[i - this.minKey] += store.bins[i - store.minKey];
+                }
+            }
+        }
+
+        this.count += store.count;
+    }
+
+    copy(store: CollapsingLowestDenseStore): void {
+        this.bins = [...store.bins];
+        this.maxBins = store.maxBins;
+        this.count = store.count;
+        this.minKey = store.minKey;
+        this.maxKey = store.maxKey;
+    }
+
     _growLeft(key: number): void {
         if (this.minKey < key || this.bins.length >= this.maxBins) {
             return;
@@ -98,7 +151,7 @@ export class CollapsingLowestDenseStore implements Store {
         } else {
             const maxKey = Math.min(
                 this.maxKey + getGrowBySize(key - this.maxKey),
-                this.minKey + this.maxBins
+                this.minKey + this.maxBins - 1
             );
             this.bins.push(...new Array(maxKey - this.maxKey).fill(0));
             this.maxKey = maxKey;
