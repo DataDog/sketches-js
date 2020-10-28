@@ -19,16 +19,32 @@ export class CollapsingLowestDenseStore implements Store {
     count: number;
     minKey: number;
     maxKey: number;
+    initialBins: number;
+    chunkSize: number;
+    initialChunkSize: number;
 
-    constructor(maxBins: number) {
+    constructor(
+        maxBins: number,
+        initialBins = INITIAL_BINS,
+        chunkSize = CHUNK_SIZE
+    ) {
         this.maxBins = maxBins;
-        this.bins = new Array(INITIAL_BINS).fill(0);
+        this.initialBins = Math.min(maxBins, initialBins);
+        this.chunkSize = chunkSize;
+        this.initialChunkSize = Math.min(maxBins, chunkSize);
+
+        this.bins = new Array(this.initialBins).fill(0);
+
         this.count = 0;
         this.minKey = 0;
         this.maxKey = 0;
     }
 
     add(key: number): void {
+        if (this.bins.length === 0) {
+            this.bins = new Array(this.initialChunkSize).fill(0);
+        }
+
         if (this.count === 0) {
             this.maxKey = key;
             this.minKey = key - this.bins.length + 1;
@@ -55,6 +71,20 @@ export class CollapsingLowestDenseStore implements Store {
         }
 
         return this.maxKey;
+    }
+
+    reversedKeyAtRank(rank: number): number {
+        let n = 0;
+
+        for (let i = this.bins.length - 1; i >= 0; i--) {
+            const bin = this.bins[i];
+            n += bin;
+            if (n >= rank) {
+                return i + this.minKey;
+            }
+        }
+
+        return this.minKey;
     }
 
     merge(store: CollapsingLowestDenseStore): void {
@@ -121,7 +151,7 @@ export class CollapsingLowestDenseStore implements Store {
             minKey = minPossible;
         } else {
             minKey = Math.max(
-                this.minKey - getGrowBySize(this.minKey - key),
+                this.minKey - this._getGrowBySize(this.minKey - key),
                 minPossible
             );
         }
@@ -150,21 +180,21 @@ export class CollapsingLowestDenseStore implements Store {
             this.bins[0] += n;
         } else {
             const maxKey = Math.min(
-                this.maxKey + getGrowBySize(key - this.maxKey),
+                this.maxKey + this._getGrowBySize(key - this.maxKey),
                 this.minKey + this.maxBins - 1
             );
             this.bins.push(...new Array(maxKey - this.maxKey).fill(0));
             this.maxKey = maxKey;
         }
     }
-}
 
-/**
- * Return the size by which to grow the store's underlying array
- */
-const getGrowBySize = (requiredGrowth: number) => {
-    return CHUNK_SIZE * Math.ceil(requiredGrowth / CHUNK_SIZE);
-};
+    /**
+     * Return the size by which to grow the store's underlying array
+     */
+    _getGrowBySize(requiredGrowth: number): number {
+        return this.chunkSize * Math.ceil(requiredGrowth / this.chunkSize);
+    }
+}
 
 /**
  * Return the sum of the values from range `start` to `end` in `array`
