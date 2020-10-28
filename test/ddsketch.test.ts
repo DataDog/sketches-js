@@ -107,11 +107,11 @@ describe('DDSketch', () => {
                     binLimit
                 });
 
-                expect(sketch2._count).toEqual(0);
+                expect(sketch2.count).toEqual(0);
 
                 sketch2.merge(sketch1);
 
-                expect(sketch2._count).toEqual(sketch1._count);
+                expect(sketch2.count).toEqual(sketch1.count);
                 evaluateSketchAccuracy(sketch2, data);
             }
         });
@@ -164,7 +164,7 @@ describe('DDSketch', () => {
             evaluateSketchAccuracy(sketch1, data1);
 
             /* sketch2 is still empty */
-            expect(sketch2._count).toEqual(0);
+            expect(sketch2.count).toEqual(0);
 
             for (const value of data2) {
                 sketch2.accept(value);

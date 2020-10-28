@@ -11,9 +11,9 @@ const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
 
 interface SketchConfig {
-    /** Number between 0 and 1 (default `0.01`) */
+    /** The accuracy guarantee of the sketch, between 0-1 (default 0.01) */
     relativeAccuracy?: number;
-    /** Default `2048` */
+    /** The maximum number of bins that the underlying stores can grow to (default 2048) */
     binLimit?: number;
 }
 
@@ -22,29 +22,37 @@ const defaultConfig: Required<SketchConfig> = {
     binLimit: DEFAULT_BIN_LIMIT
 };
 
-/**
- * A quantile sketch with relative-error guarantees
- */
+/** A quantile sketch with relative-error guarantees */
 export class DDSketch {
+    /** Storage for positive values */
     store: Store;
+    /** Storage for negative values */
     negativeStore: Store;
+    /** The accuracy guarantee of the sketch */
     relativeAccuracy: number;
+    /** The base for the exponential buckets */
     gamma: number;
+    /** The count of zero values */
     zeroCount: number;
+    /** Used for calculating logGamma(value) */
     multiplier: number;
+    /** The smallest value the sketch can distinguish from 0 */
     minPossible: number;
 
-    /* Track summary statistics */
-    _min: number;
-    _max: number;
-    _count: number;
-    _sum: number;
+    /** The minimum value seen by the sketch */
+    min: number;
+    /** The maximum value seen by the sketch */
+    max: number;
+    /** The total number of values seen by the sketch */
+    count: number;
+    /** The sum of the values seen by the sketch */
+    sum: number;
 
     /**
      * Initialize a new DDSketch
      *
-     * @param relativeAccuracy The relative retrieval accuracy
-     * @param binLimit The maximum number of bins that the underlying store can grow to
+     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
+     * @param binLimit The maximum number of bins that the underlying store can grow to (default 2048)
      */
     constructor(
         {
@@ -64,10 +72,10 @@ export class DDSketch {
         this.multiplier = 1 / gammaLn;
         this.minPossible = Number.MIN_VALUE * this.gamma;
 
-        this._count = 0;
-        this._min = Infinity;
-        this._max = -Infinity;
-        this._sum = 0;
+        this.count = 0;
+        this.min = Infinity;
+        this.max = -Infinity;
+        this.sum = 0;
     }
 
     /**
@@ -87,33 +95,33 @@ export class DDSketch {
         }
 
         /* Keep track of summary stats */
-        this._count += 1;
-        this._sum += value;
-        if (value < this._min) {
-            this._min = value;
+        this.count += 1;
+        this.sum += value;
+        if (value < this.min) {
+            this.min = value;
         }
-        if (value > this._max) {
-            this._max = value;
+        if (value > this.max) {
+            this.max = value;
         }
     }
 
     /**
      * Retrieve a value from the sketch at the quantile
      *
-     * @param q A number between `0` and `1` (inclusive)
+     * @param quantile A number between `0` and `1` (inclusive)
      */
     getValueAtQuantile(quantile: number): number {
-        if (quantile < 0 || quantile > 1 || this._count === 0) {
+        if (quantile < 0 || quantile > 1 || this.count === 0) {
             return NaN;
         }
         if (quantile === 0) {
-            return this._min;
+            return this.min;
         }
         if (quantile === 1) {
-            return this._max;
+            return this.max;
         }
 
-        const rank = Math.floor(quantile * (this._count - 1) + 1);
+        const rank = Math.floor(quantile * (this.count - 1) + 1);
 
         let quantileValue = 0;
         if (rank <= this.negativeStore.count) {
@@ -128,49 +136,66 @@ export class DDSketch {
             quantileValue = (2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
         }
 
-        return Math.max(quantileValue, this._min);
+        return Math.max(quantileValue, this.min);
     }
 
+    /**
+     * Merge the contents of the parameter `sketch` into this sketch
+     *
+     * @param sketch The sketch to merge into the caller sketch
+     * @throws Error if the sketches were initialized with different `relativeAccuracy` values
+     */
     merge(sketch: DDSketch): void {
         if (!this.mergeable(sketch)) {
             throw new Error(
-                'Cannot merge two DDSketches with different parameters'
+                'Cannot merge two DDSketches with different `relativeAccuracy` parameters'
             );
         }
 
-        if (sketch._count === 0) {
+        if (sketch.count === 0) {
             return;
         }
 
-        if (this._count === 0) {
-            this.copy(sketch);
+        if (this.count === 0) {
+            this._copy(sketch);
             return;
         }
 
         this.store.merge(sketch.store);
 
         /* Merge summary stats */
-        this._count += sketch._count;
-        this._sum += sketch._sum;
-        if (sketch._min < this._min) {
-            this._min = sketch._min;
+        this.count += sketch.count;
+        this.sum += sketch.sum;
+        if (sketch.min < this.min) {
+            this.min = sketch.min;
         }
-        if (sketch._max > this._max) {
-            this._max = sketch._max;
+        if (sketch.max > this.max) {
+            this.max = sketch.max;
         }
     }
 
+    /**
+     * Determine whether two sketches can be merged
+     *
+     * @param sketch The sketch to be merged into the caller sketch
+     */
     mergeable(sketch: DDSketch): boolean {
         return this.gamma === sketch.gamma;
     }
 
-    copy(sketch: DDSketch): void {
+    /**
+     * Helper method to copy the contents of the parameter `store` into this store
+     * @see DDSketch.merge to merge two sketches safely
+     *
+     * @param store The store to be copied into the caller store
+     */
+    _copy(sketch: DDSketch): void {
         this.store.copy(sketch.store);
         this.negativeStore.copy(sketch.negativeStore);
         this.zeroCount = sketch.zeroCount;
-        this._min = sketch._min;
-        this._max = sketch._max;
-        this._count = sketch._count;
-        this._sum = sketch._sum;
+        this.min = sketch.min;
+        this.max = sketch.max;
+        this.count = sketch.count;
+        this.sum = sketch.sum;
     }
 }

@@ -5,7 +5,9 @@
  * Copyright 2020 Datadog, Inc.
  */
 
+/** The default number of bins to allocate for a store */
 const INITIAL_BINS = 128;
+/** The default number of bins to grow when necessary */
 const CHUNK_SIZE = 128;
 
 interface Store {
@@ -13,16 +15,36 @@ interface Store {
     keyAtRank: (rank: number) => number;
 }
 
+/**
+ * `CollapsingLowestDenseStore` is a dense store that keeps all the bins between
+ * the bin for the `minKey` and the `maxKey`, but collapsing the left-most bins
+ * if the number of bins exceeds `maxBins`
+ */
 export class CollapsingLowestDenseStore implements Store {
+    /** The maximum number of bins */
     maxBins: number;
+    /** Storage for counts */
     bins: number[];
+    /** The total number of values added to the store */
     count: number;
+    /** The minimum key bin */
     minKey: number;
+    /** The maximum key bin */
     maxKey: number;
+    /** The initial number of bins to initialize the store with */
     initialBins: number;
+    /** The number of bins to grow when necessary */
     chunkSize: number;
+    /** The initial number of bins to grow by, if the store was not originally initialized */
     initialChunkSize: number;
 
+    /**
+     * Initialize a new CollapsingLowestDenseStore
+     *
+     * @param maxBins The maximum number of bins
+     * @param initialBins The initial number of bins (default 128)
+     * @param chunkSize The number of bins to add each time the bins grow (default 128)
+     */
     constructor(
         maxBins: number,
         initialBins = INITIAL_BINS,
@@ -40,7 +62,13 @@ export class CollapsingLowestDenseStore implements Store {
         this.maxKey = 0;
     }
 
+    /**
+     * Update the counter at the specified index key, growing the number of bins if necessary
+     *
+     * @param key The key of the index to update
+     */
     add(key: number): void {
+        /* Grow the store if it was initialized with 0 `initialBins` */
         if (this.bins.length === 0) {
             this.bins = new Array(this.initialChunkSize).fill(0);
         }
@@ -59,6 +87,11 @@ export class CollapsingLowestDenseStore implements Store {
         this.count += 1;
     }
 
+    /**
+     * Return the key for the value at the given rank
+     *
+     * @param rank
+     */
     keyAtRank(rank: number): number {
         let n = 0;
 
@@ -73,6 +106,11 @@ export class CollapsingLowestDenseStore implements Store {
         return this.maxKey;
     }
 
+    /**
+     * Return the key for the value at the given rank in reversed order
+     *
+     * @param rank
+     */
     reversedKeyAtRank(rank: number): number {
         let n = 0;
 
@@ -87,6 +125,11 @@ export class CollapsingLowestDenseStore implements Store {
         return this.minKey;
     }
 
+    /**
+     * Merge the contents of the parameter `store` into this store
+     *
+     * @param store The store to merge into the caller store
+     */
     merge(store: CollapsingLowestDenseStore): void {
         if (store.count === 0) {
             return;
@@ -132,6 +175,11 @@ export class CollapsingLowestDenseStore implements Store {
         this.count += store.count;
     }
 
+    /**
+     * Directly clone the contents of the parameter `store` into this store
+     *
+     * @param store The store to be copied into the caller store
+     */
     copy(store: CollapsingLowestDenseStore): void {
         this.bins = [...store.bins];
         this.maxBins = store.maxBins;
@@ -140,6 +188,9 @@ export class CollapsingLowestDenseStore implements Store {
         this.maxKey = store.maxKey;
     }
 
+    /**
+     * Add bins to the left
+     */
     _growLeft(key: number): void {
         if (this.minKey < key || this.bins.length >= this.maxBins) {
             return;
@@ -160,6 +211,9 @@ export class CollapsingLowestDenseStore implements Store {
         this.minKey = minKey;
     }
 
+    /**
+     * Add bins to the right
+     */
     _growRight(key: number): void {
         if (this.maxKey > key) {
             return;
@@ -189,7 +243,7 @@ export class CollapsingLowestDenseStore implements Store {
     }
 
     /**
-     * Return the size by which to grow the store's underlying array
+     * Return the size by which to grow the store's bins
      */
     _getGrowBySize(requiredGrowth: number): number {
         return this.chunkSize * Math.ceil(requiredGrowth / this.chunkSize);
