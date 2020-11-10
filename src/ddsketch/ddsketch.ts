@@ -9,67 +9,73 @@ import { CollapsingLowestDenseStore as Store } from './store';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
-const DEFAULT_MIN_VALUE = 1.0e-9;
 
 interface SketchConfig {
-    /** Number between 0 and 1 (default `0.01`) */
+    /** The accuracy guarantee of the sketch, between 0-1 (default 0.01) */
     relativeAccuracy?: number;
-    /** Default `2048` */
+    /** The maximum number of bins that the underlying stores can grow to (default 2048) */
     binLimit?: number;
-    /** Default `1.0e-9` */
-    minValue?: number;
 }
 
 const defaultConfig: Required<SketchConfig> = {
     relativeAccuracy: DEFAULT_RELATIVE_ACCURACY,
-    binLimit: DEFAULT_BIN_LIMIT,
-    minValue: DEFAULT_MIN_VALUE
+    binLimit: DEFAULT_BIN_LIMIT
 };
 
-/**
- * A quantile sketch with relative-error guarantees
- */
+/** A quantile sketch with relative-error guarantees */
 export class DDSketch {
+    /** Storage for positive values */
     store: Store;
+    /** Storage for negative values */
+    negativeStore: Store;
+    /** The accuracy guarantee of the sketch */
     relativeAccuracy: number;
+    /** The base for the exponential buckets */
     gamma: number;
-    gammaLn: number;
-    minValue: number;
-    offset: number;
+    /** The count of zero values */
+    zeroCount: number;
+    /** Used for calculating logGamma(value) */
+    multiplier: number;
+    /** The smallest value the sketch can distinguish from 0 */
+    minPossible: number;
 
-    /* Track summary statistics */
-    _min: number;
-    _max: number;
-    _count: number;
-    _sum: number;
+    /** The minimum value seen by the sketch */
+    min: number;
+    /** The maximum value seen by the sketch */
+    max: number;
+    /** The total number of values seen by the sketch */
+    count: number;
+    /** The sum of the values seen by the sketch */
+    sum: number;
 
     /**
      * Initialize a new DDSketch
      *
-     * @param relativeAccuracy The relative retrieval accuracy
-     * @param binLimit The maximum number of bins that `store` can grow to
-     * @param minValue The minimum value capable of being stored in the sketch
+     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
+     * @param binLimit The maximum number of bins that the underlying store can grow to (default 2048)
      */
     constructor(
         {
             relativeAccuracy = defaultConfig.relativeAccuracy,
-            minValue = defaultConfig.minValue,
             binLimit = defaultConfig.binLimit
         } = defaultConfig as SketchConfig
     ) {
-        this.minValue = minValue;
-        this.relativeAccuracy = relativeAccuracy;
         this.store = new Store(binLimit);
+        this.negativeStore = new Store(binLimit, 0);
+        this.relativeAccuracy = relativeAccuracy;
 
-        const x = (2 * this.relativeAccuracy) / (1 - this.relativeAccuracy);
-        this.gamma = 1 + x;
-        this.gammaLn = Math.log1p(x);
-        this.offset = -Math.ceil(Math.log(this.minValue) / this.gammaLn) + 1;
+        this.zeroCount = 0;
 
-        this._count = 0;
-        this._sum = 0;
-        this._min = Infinity;
-        this._max = -Infinity;
+        const gammaMantissa = (2 * relativeAccuracy) / (1 - relativeAccuracy);
+        this.gamma = 1 + gammaMantissa;
+        const gammaLn = Math.log1p(gammaMantissa);
+        this.multiplier = 1 / gammaLn;
+        this.minPossible = Number.MIN_VALUE * this.gamma;
+
+        this.count = 0;
+        this.min = Infinity;
+        this.max = -Infinity;
+        this.sum = 0;
     }
 
     /**
@@ -78,103 +84,118 @@ export class DDSketch {
      * @param value The value to be added
      */
     accept(value: number): void {
-        const key = this._getKey(value);
-        this.store.add(key);
-
-        this._count += 1;
-        this._sum += value;
-        if (value < this._min) {
-            this._min = value;
+        if (value > this.minPossible) {
+            const key = Math.ceil(Math.log(value) * this.multiplier);
+            this.store.add(key);
+        } else if (value < -this.minPossible) {
+            const key = Math.ceil(Math.log(-value) * this.multiplier);
+            this.negativeStore.add(key);
+        } else {
+            this.zeroCount += 1;
         }
-        if (value > this._max) {
-            this._max = value;
+
+        /* Keep track of summary stats */
+        this.count += 1;
+        this.sum += value;
+        if (value < this.min) {
+            this.min = value;
+        }
+        if (value > this.max) {
+            this.max = value;
         }
     }
 
     /**
      * Retrieve a value from the sketch at the quantile
      *
-     * @param q A number between `0` and `1` (inclusive)
+     * @param quantile A number between `0` and `1` (inclusive)
      */
     getValueAtQuantile(quantile: number): number {
-        if (quantile < 0 || quantile > 1 || this._count === 0) {
+        if (quantile < 0 || quantile > 1 || this.count === 0) {
             return NaN;
         }
         if (quantile === 0) {
-            return this._min;
+            return this.min;
         }
         if (quantile === 1) {
-            return this._max;
+            return this.max;
         }
 
-        const rank = Math.floor(quantile * (this._count - 1) + 1);
-        let key = this.store.keyAtRank(rank);
+        const rank = Math.floor(quantile * (this.count - 1) + 1);
 
-        let computedQuantile = 0;
-        if (key < 0) {
-            key += this.offset;
-            computedQuantile =
-                (-2 * Math.pow(this.gamma, -key)) / (1 + this.gamma);
-        } else if (key > 0) {
-            key -= this.offset;
-            computedQuantile =
-                (2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
+        let quantileValue = 0;
+        if (rank <= this.negativeStore.count) {
+            const key = this.negativeStore.reversedKeyAtRank(rank);
+            quantileValue = -(2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
+        } else if (rank <= this.zeroCount + this.negativeStore.count) {
+            return 0;
+        } else {
+            const key = this.store.keyAtRank(
+                rank - this.zeroCount - this.negativeStore.count
+            );
+            quantileValue = (2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
         }
 
-        return Math.max(computedQuantile, this._min);
+        return Math.max(quantileValue, this.min);
     }
 
+    /**
+     * Merge the contents of the parameter `sketch` into this sketch
+     *
+     * @param sketch The sketch to merge into the caller sketch
+     * @throws Error if the sketches were initialized with different `relativeAccuracy` values
+     */
     merge(sketch: DDSketch): void {
         if (!this.mergeable(sketch)) {
             throw new Error(
-                'Cannot merge two DDSketches with different parameters'
+                'Cannot merge two DDSketches with different `relativeAccuracy` parameters'
             );
         }
 
-        if (sketch._count === 0) {
+        if (sketch.count === 0) {
             return;
         }
 
-        if (this._count === 0) {
-            this.copy(sketch);
+        if (this.count === 0) {
+            this._copy(sketch);
             return;
         }
 
         this.store.merge(sketch.store);
 
         /* Merge summary stats */
-        this._count += sketch._count;
-        this._sum += sketch._sum;
-        if (sketch._min < this._min) {
-            this._min = sketch._min;
+        this.count += sketch.count;
+        this.sum += sketch.sum;
+        if (sketch.min < this.min) {
+            this.min = sketch.min;
         }
-        if (sketch._max > this._max) {
-            this._max = sketch._max;
+        if (sketch.max > this.max) {
+            this.max = sketch.max;
         }
     }
 
+    /**
+     * Determine whether two sketches can be merged
+     *
+     * @param sketch The sketch to be merged into the caller sketch
+     */
     mergeable(sketch: DDSketch): boolean {
-        return this.gamma === sketch.gamma && this.minValue === sketch.minValue;
+        return this.gamma === sketch.gamma;
     }
 
-    copy(sketch: DDSketch): void {
+    /**
+     * Helper method to copy the contents of the parameter `store` into this store
+     * @see DDSketch.merge to merge two sketches safely
+     *
+     * @param store The store to be copied into the caller store
+     */
+    _copy(sketch: DDSketch): void {
         this.store.copy(sketch.store);
-        this._min = sketch._min;
-        this._max = sketch._max;
-        this._count = sketch._count;
-        this._sum = sketch._sum;
-    }
-
-    /** Calculate the key in the store for a given value */
-    _getKey(value: number): number {
-        if (value < -this.minValue) {
-            /* Retrieving negative value */
-            return -Math.ceil(Math.log(-value) / this.gammaLn) - this.offset;
-        } else if (value > this.minValue) {
-            /* Retrieving positive value */
-            return Math.ceil(Math.log(value) / this.gammaLn) + this.offset;
-        } else {
-            return 0;
-        }
+        this.negativeStore.copy(sketch.negativeStore);
+        this.zeroCount = sketch.zeroCount;
+        this.min = sketch.min;
+        this.max = sketch.max;
+        this.count = sketch.count;
+        this.sum = sketch.sum;
     }
 }

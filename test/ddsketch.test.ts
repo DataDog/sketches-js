@@ -10,21 +10,24 @@ import {
     generateDecreasing,
     generateIncreasing,
     generateRandom,
-    generateConstant
+    generateConstant,
+    generateConstantNegative,
+    generatePositiveAndNegative
 } from './datasets';
 
 const datasets = [
     generateIncreasing,
     generateDecreasing,
     generateRandom,
-    generateConstant
+    generateConstant,
+    generateConstantNegative,
+    generatePositiveAndNegative
 ];
 const testSizes = [3, 5, 10, 100, 1000];
 const testQuantiles = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 1];
 
 const relativeAccuracy = 0.05;
 const binLimit = 1024;
-const minValue = 1.0e-9;
 
 const getQuantile = (data: number[], quantile: number) => {
     const sortedIncreasingData = data.sort((a, b) => a - b);
@@ -41,6 +44,12 @@ describe('DDSketch', () => {
 
             const adjustedError = error - relativeAccuracy * Math.abs(dataQ);
             const allowedError = 1e-15;
+
+            if (adjustedError > allowedError) {
+                console.error(
+                    `For quantile ${quantile}:\nSketch: ${sketchQ}\nData: ${dataQ}`
+                );
+            }
 
             expect(adjustedError).toBeLessThanOrEqual(allowedError);
         }
@@ -63,8 +72,7 @@ describe('DDSketch', () => {
                 const data = dataset(n);
                 const sketch = new DDSketch({
                     relativeAccuracy,
-                    binLimit,
-                    minValue
+                    binLimit
                 });
 
                 for (const value of data) {
@@ -78,37 +86,6 @@ describe('DDSketch', () => {
 
     describe('merging sketches', () => {
         it('allows a sketch with values to be merged into an empty sketch', () => {
-            // `sketch1`: Data is added
-            // `sketch2`: Empty, sketch1 is merged into it
-
-            for (const n of testSizes) {
-                const data = generateIncreasing(n);
-                const sketch1 = new DDSketch({
-                    relativeAccuracy,
-                    binLimit,
-                    minValue
-                });
-
-                for (const value of data) {
-                    sketch1.accept(value);
-                }
-
-                const sketch2 = new DDSketch({
-                    relativeAccuracy,
-                    binLimit,
-                    minValue
-                });
-
-                expect(sketch2._count).toEqual(0);
-
-                sketch2.merge(sketch1);
-
-                expect(sketch2._count).toEqual(sketch1._count);
-                evaluateSketchAccuracy(sketch2, data);
-            }
-        });
-
-        it('allows a sketch with values to be merged into an empty sketch', () => {
             /**
              * sketch1: Data is added
              * sketch2: Empty, sketch1 is merged into it
@@ -118,8 +95,7 @@ describe('DDSketch', () => {
                 const data = generateIncreasing(n);
                 const sketch1 = new DDSketch({
                     relativeAccuracy,
-                    binLimit,
-                    minValue
+                    binLimit
                 });
 
                 for (const value of data) {
@@ -128,15 +104,14 @@ describe('DDSketch', () => {
 
                 const sketch2 = new DDSketch({
                     relativeAccuracy,
-                    binLimit,
-                    minValue
+                    binLimit
                 });
 
-                expect(sketch2._count).toEqual(0);
+                expect(sketch2.count).toEqual(0);
 
                 sketch2.merge(sketch1);
 
-                expect(sketch2._count).toEqual(sketch1._count);
+                expect(sketch2.count).toEqual(sketch1.count);
                 evaluateSketchAccuracy(sketch2, data);
             }
         });
@@ -146,13 +121,11 @@ describe('DDSketch', () => {
                 const data = generateIncreasing(n);
                 const sketch1 = new DDSketch({
                     relativeAccuracy,
-                    binLimit,
-                    minValue
+                    binLimit
                 });
                 const sketch2 = new DDSketch({
                     relativeAccuracy,
-                    binLimit,
-                    minValue
+                    binLimit
                 });
 
                 for (let i = 0; i < n; i++) {
@@ -175,13 +148,11 @@ describe('DDSketch', () => {
             const data2 = generateRandom(50);
             const sketch1 = new DDSketch({
                 relativeAccuracy,
-                binLimit,
-                minValue
+                binLimit
             });
             const sketch2 = new DDSketch({
                 relativeAccuracy,
-                binLimit,
-                minValue
+                binLimit
             });
 
             for (const value of data1) {
@@ -193,7 +164,7 @@ describe('DDSketch', () => {
             evaluateSketchAccuracy(sketch1, data1);
 
             /* sketch2 is still empty */
-            expect(sketch2._count).toEqual(0);
+            expect(sketch2.count).toEqual(0);
 
             for (const value of data2) {
                 sketch2.accept(value);

@@ -28,7 +28,6 @@ To configure the sketch's parameters:
 const sketch = new DDSketch({
   relativeAccuracy: 0.05, // defaults to 0.01
   binLimit: 1024,         // defaults to 2048
-  minValue: 1.0e-9        // defaults to 1.0e-9
 });
 ```
 
@@ -52,7 +51,7 @@ sketch.getValueAtQuantile(1)
 
 ### Merge sketches
 
-Independent sketches can be merged together, provided that they were initialized with the same `relativeAccuracy` and `minValue`:
+Independent sketches can be merged together, provided that they were initialized with the same `relativeAccuracy`:
 
 ```js
 const sketch1 = new DDSketch();

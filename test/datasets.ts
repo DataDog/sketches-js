@@ -33,3 +33,18 @@ export const generateConstant = (size: number): number[] => {
 
     return data;
 };
+
+export const generateConstantNegative = (size: number): number[] => {
+    const data = new Array<number>(size).fill(-42);
+
+    return data;
+};
+
+export const generatePositiveAndNegative = (size: number): number[] => {
+    const data = new Array<number>(size);
+    for (let i = 0; i < size; i++) {
+        data[i] = Math.random() > 0.5 ? i : -i;
+    }
+
+    return data;
+};
