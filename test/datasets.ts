@@ -5,46 +5,46 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export const generateIncreasing = (size: number): number[] => {
+export function generateIncreasing(size: number): number[] {
     const data = new Array<number>(size);
     for (let i = 0; i < size; i++) {
         data[i] = i;
     }
 
     return data;
-};
+}
 
-export const generateDecreasing = (size: number): number[] => {
+export function generateDecreasing(size: number): number[] {
     const data = generateIncreasing(size);
     return data.reverse();
-};
+}
 
-export const generateRandom = (size: number): number[] => {
+export function generateRandom(size: number): number[] {
     const data = new Array<number>(size);
     for (let i = 0; i < size; i++) {
         data[i] = Math.random();
     }
 
     return data;
-};
+}
 
-export const generateConstant = (size: number): number[] => {
+export function generateConstant(size: number): number[] {
     const data = new Array<number>(size).fill(42);
 
     return data;
-};
+}
 
-export const generateConstantNegative = (size: number): number[] => {
+export function generateConstantNegative(size: number): number[] {
     const data = new Array<number>(size).fill(-42);
 
     return data;
-};
+}
 
-export const generatePositiveAndNegative = (size: number): number[] => {
+export function generatePositiveAndNegative(size: number): number[] {
     const data = new Array<number>(size);
     for (let i = 0; i < size; i++) {
         data[i] = Math.random() > 0.5 ? i : -i;
     }
 
     return data;
-};
+}
