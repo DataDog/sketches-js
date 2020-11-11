@@ -5,15 +5,12 @@
  * Copyright 2020 Datadog, Inc.
  */
 
+import type { Store } from './Store';
+
 /** The default number of bins to allocate for a store */
 const INITIAL_BINS = 128;
 /** The default number of bins to grow when necessary */
 const CHUNK_SIZE = 128;
-
-interface Store {
-    add: (value: number) => void;
-    keyAtRank: (rank: number) => number;
-}
 
 /**
  * `CollapsingLowestDenseStore` is a dense store that keeps all the bins between

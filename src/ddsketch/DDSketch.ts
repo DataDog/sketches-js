@@ -5,7 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import { CollapsingLowestDenseStore as Store } from './store';
+import { CollapsingLowestDenseStore } from './store';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
@@ -25,9 +25,9 @@ const defaultConfig: Required<SketchConfig> = {
 /** A quantile sketch with relative-error guarantees */
 export class DDSketch {
     /** Storage for positive values */
-    store: Store;
+    store: CollapsingLowestDenseStore;
     /** Storage for negative values */
-    negativeStore: Store;
+    negativeStore: CollapsingLowestDenseStore;
     /** The accuracy guarantee of the sketch */
     relativeAccuracy: number;
     /** The base for the exponential buckets */
@@ -60,8 +60,8 @@ export class DDSketch {
             binLimit = defaultConfig.binLimit
         } = defaultConfig as SketchConfig
     ) {
-        this.store = new Store(binLimit);
-        this.negativeStore = new Store(binLimit, 0);
+        this.store = new CollapsingLowestDenseStore(binLimit);
+        this.negativeStore = new CollapsingLowestDenseStore(binLimit, 0);
         this.relativeAccuracy = relativeAccuracy;
 
         this.zeroCount = 0;

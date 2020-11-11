@@ -5,4 +5,9 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export { DDSketch } from './ddsketch';
+export interface Store {
+    add: (value: number) => void;
+    keyAtRank: (rank: number) => number;
+    reversedKeyAtRank: (rank: number) => number;
+    count: number;
+}
