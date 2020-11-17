@@ -9,18 +9,10 @@ import { CollapsingLowestDenseStore } from '../src/ddsketch/store';
 import {
     generateDecreasing,
     generateIncreasing,
-    generateConstant,
-    generateConstantNegative,
-    generatePositiveAndNegative
+    generateConstant
 } from './datasets';
 
-const datasets = [
-    generateIncreasing,
-    generateDecreasing,
-    generateConstant,
-    generateConstantNegative,
-    generatePositiveAndNegative
-];
+const datasets = [generateIncreasing, generateDecreasing, generateConstant];
 
 const testBinLimits = [2048];
 const testSizes = [0, 1, 10, 1000];

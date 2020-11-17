@@ -114,18 +114,12 @@ export class DDSketch {
         if (quantile < 0 || quantile > 1 || this.count === 0) {
             return NaN;
         }
-        if (quantile === 0) {
-            return this.min;
-        }
-        if (quantile === 1) {
-            return this.max;
-        }
 
         const rank = Math.floor(quantile * (this.count - 1) + 1);
 
         let quantileValue = 0;
         if (rank <= this.negativeStore.count) {
-            const key = this.negativeStore.reversedKeyAtRank(rank);
+            const key = this.negativeStore.keyAtRank(rank, true);
             quantileValue = -(2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
         } else if (rank <= this.zeroCount + this.negativeStore.count) {
             return 0;

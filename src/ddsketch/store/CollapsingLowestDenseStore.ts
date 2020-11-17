@@ -7,19 +7,17 @@
 
 import type { Store } from './Store';
 
-/** The default number of bins to allocate for a store */
-const INITIAL_BINS = 128;
 /** The default number of bins to grow when necessary */
 const CHUNK_SIZE = 128;
 
 /**
  * `CollapsingLowestDenseStore` is a dense store that keeps all the bins between
  * the bin for the `minKey` and the `maxKey`, but collapsing the left-most bins
- * if the number of bins exceeds `maxBins`
+ * if the number of bins exceeds `binLimit`
  */
 export class CollapsingLowestDenseStore implements Store {
     /** The maximum number of bins */
-    maxBins: number;
+    binLimit: number;
     /** Storage for counts */
     bins: number[];
     /** The total number of values added to the store */
@@ -28,35 +26,29 @@ export class CollapsingLowestDenseStore implements Store {
     minKey: number;
     /** The maximum key bin */
     maxKey: number;
-    /** The initial number of bins to initialize the store with */
-    initialBins: number;
     /** The number of bins to grow when necessary */
     chunkSize: number;
-    /** The initial number of bins to grow by, if the store was not originally initialized */
-    initialChunkSize: number;
+    isCollapsed: boolean;
+    offset: number;
 
     /**
      * Initialize a new CollapsingLowestDenseStore
      *
-     * @param maxBins The maximum number of bins
+     * @param binLimit The maximum number of bins
      * @param initialBins The initial number of bins (default 128)
      * @param chunkSize The number of bins to add each time the bins grow (default 128)
      */
-    constructor(
-        maxBins: number,
-        initialBins = INITIAL_BINS,
-        chunkSize = CHUNK_SIZE
-    ) {
-        this.maxBins = maxBins;
-        this.initialBins = Math.min(maxBins, initialBins);
+    constructor(binLimit: number, chunkSize = CHUNK_SIZE) {
+        this.binLimit = binLimit;
         this.chunkSize = chunkSize;
-        this.initialChunkSize = Math.min(maxBins, chunkSize);
 
-        this.bins = new Array(this.initialBins).fill(0);
+        this.bins = [];
 
         this.count = 0;
-        this.minKey = 0;
-        this.maxKey = 0;
+        this.minKey = Infinity;
+        this.maxKey = -Infinity;
+        this.isCollapsed = false;
+        this.offset = 0;
     }
 
     /**
@@ -65,21 +57,7 @@ export class CollapsingLowestDenseStore implements Store {
      * @param key The key of the index to update
      */
     add(key: number): void {
-        /* Grow the store if it was initialized with 0 `initialBins` */
-        if (this.bins.length === 0) {
-            this.bins = new Array(this.initialChunkSize).fill(0);
-        }
-
-        if (this.count === 0) {
-            this.maxKey = key;
-            this.minKey = key - this.bins.length + 1;
-        } else if (key < this.minKey) {
-            this._growLeft(key);
-        } else if (key > this.maxKey) {
-            this._growRight(key);
-        }
-
-        const index = Math.max(0, key - this.minKey);
+        const index = this._getIndex(key);
         this.bins[index] += 1;
         this.count += 1;
     }
@@ -88,38 +66,28 @@ export class CollapsingLowestDenseStore implements Store {
      * Return the key for the value at the given rank
      *
      * @param rank
+     * @param reverse
      */
-    keyAtRank(rank: number): number {
-        let n = 0;
+    keyAtRank(rank: number, reverse = false): number {
+        if (reverse) {
+            rank = this.count + 1 - rank;
+        }
+
+        let runningCount = 0;
 
         for (let i = 0; i < this.bins.length; i++) {
             const bin = this.bins[i];
-            n += bin;
-            if (n >= rank) {
-                return i + this.minKey;
+            runningCount += bin;
+            if (runningCount >= rank) {
+                return i + this.offset;
             }
         }
 
-        return this.maxKey;
-    }
-
-    /**
-     * Return the key for the value at the given rank in reversed order
-     *
-     * @param rank
-     */
-    reversedKeyAtRank(rank: number): number {
-        let n = 0;
-
-        for (let i = this.bins.length - 1; i >= 0; i--) {
-            const bin = this.bins[i];
-            n += bin;
-            if (n >= rank) {
-                return i + this.minKey;
-            }
+        if (reverse) {
+            return this.minKey;
+        } else {
+            return this.maxKey;
         }
-
-        return this.minKey;
     }
 
     /**
@@ -137,36 +105,30 @@ export class CollapsingLowestDenseStore implements Store {
             return;
         }
 
-        if (this.maxKey > store.maxKey) {
-            if (store.minKey < this.minKey) {
-                this._growLeft(store.minKey);
-            }
+        if (store.minKey < this.minKey || store.maxKey > this.maxKey) {
+            this._extendRange(store.minKey, store.maxKey);
+        }
 
-            const largestMinKey = Math.max(this.minKey, store.minKey);
-
-            for (let i = largestMinKey; i <= store.maxKey; i++) {
-                this.bins[i - this.minKey] += store.bins[i - store.minKey];
-            }
-
-            if (this.minKey > store.minKey) {
-                const n = sumOfRange(store.bins, 0, this.minKey - store.minKey);
-                this.bins[0] += n;
-            }
+        const collapseStartIndex = store.minKey - store.offset;
+        let collapseEndIndex =
+            Math.min(this.minKey, store.maxKey + 1) - store.offset;
+        if (collapseEndIndex > collapseStartIndex) {
+            const collapseCount = sumOfRange(
+                store.bins,
+                collapseStartIndex,
+                collapseEndIndex
+            );
+            this.bins[0] += collapseCount;
         } else {
-            if (store.minKey < this.minKey) {
-                const temp = [...store.bins];
-                for (let i = this.minKey; i <= this.maxKey; i++) {
-                    temp[i - store.minKey] += this.bins[i - this.minKey];
-                }
-                this.bins = temp;
-                this.maxKey = store.maxKey;
-                this.minKey = store.minKey;
-            } else {
-                this._growRight(store.maxKey);
-                for (let i = store.minKey; i <= store.maxKey; i++) {
-                    this.bins[i - this.minKey] += store.bins[i - store.minKey];
-                }
-            }
+            collapseEndIndex = collapseStartIndex;
+        }
+
+        for (
+            let key = collapseEndIndex + store.offset;
+            key < store.maxKey + 1;
+            key++
+        ) {
+            this.bins[key - this.offset] += store.bins[key - store.offset];
         }
 
         this.count += store.count;
@@ -179,71 +141,136 @@ export class CollapsingLowestDenseStore implements Store {
      */
     copy(store: CollapsingLowestDenseStore): void {
         this.bins = [...store.bins];
-        this.maxBins = store.maxBins;
         this.count = store.count;
         this.minKey = store.minKey;
         this.maxKey = store.maxKey;
+        this.offset = store.offset;
+        this.binLimit = store.binLimit;
+        this.isCollapsed = store.isCollapsed;
+    }
+
+    length(): number {
+        return this.bins.length;
+    }
+
+    _getNewLength(newMinKey: number, newMaxKey: number): number {
+        const desiredLength = newMaxKey - newMinKey + 1;
+        return Math.min(
+            this.chunkSize * Math.ceil(desiredLength / this.chunkSize),
+            this.binLimit
+        );
     }
 
     /**
-     * Add bins to the left
+     * Adjust the `bins`, the `offset`, the `minKey`, and the `maxKey`
+     * without resizing the bins, in order to try to make it fit the specified range.
+     * Collapse to the left if necessary
      */
-    _growLeft(key: number): void {
-        if (this.minKey < key || this.bins.length >= this.maxBins) {
-            return;
-        }
-        const minPossible = this.maxKey - this.maxBins + 1;
+    _adjust(newMinKey: number, newMaxKey: number): void {
+        if (newMaxKey - newMinKey + 1 > this.length()) {
+            // The range of keys is too wide, the lowest bins need to be collapsed
+            newMinKey = newMaxKey = this.length() + 1;
 
-        let minKey;
-        if (this.maxKey - key >= this.maxBins) {
-            minKey = minPossible;
+            if (newMinKey >= this.maxKey) {
+                // Put everything in the first bin
+                this.offset = newMinKey;
+                this.minKey = newMinKey;
+                this.bins.fill(0);
+                this.bins[0] = this.count;
+            } else {
+                const shift = this.offset - newMinKey;
+                if (shift < 0) {
+                    const collapseStartIndex = this.minKey - this.offset;
+                    const collapseEndIndex = newMinKey - this.offset;
+                    const collapsedCount = sumOfRange(
+                        this.bins,
+                        collapseStartIndex,
+                        collapseEndIndex
+                    );
+                    this.bins.fill(0, collapseStartIndex, collapseEndIndex);
+                    this.bins[collapseEndIndex] += collapsedCount;
+                    this.minKey = newMinKey;
+                    this._shiftBins(shift);
+                } else {
+                    this.minKey = newMinKey;
+                    // Shift the buckets to make room for newMinKey
+                    this._shiftBins(shift);
+                }
+            }
         } else {
-            minKey = Math.max(
-                this.minKey - this._getGrowBySize(this.minKey - key),
-                minPossible
-            );
+            this._centerBins(newMinKey, newMaxKey);
+            this.minKey = newMinKey;
+            this.maxKey = newMaxKey;
         }
-
-        this.bins.unshift(...new Array(this.minKey - minKey).fill(0));
-        this.minKey = minKey;
     }
 
-    /**
-     * Add bins to the right
-     */
-    _growRight(key: number): void {
-        if (this.maxKey > key) {
-            return;
-        }
-
-        if (key - this.maxKey >= this.maxBins) {
-            this.bins = new Array(this.maxBins).fill(0);
-            this.maxKey = key;
-            this.minKey = key - this.maxBins + 1;
-            this.bins[0] = this.count;
-        } else if (key - this.minKey >= this.maxBins) {
-            const minKey = key - this.maxBins + 1;
-            const n = sumOfRange(this.bins, 0, minKey - this.minKey);
-            this.bins = this.bins.slice(minKey - this.minKey, this.bins.length);
-            this.bins.push(...new Array(key - this.maxKey).fill(0));
-            this.maxKey = key;
-            this.minKey = minKey;
-            this.bins[0] += n;
+    /** Shift the bins by `shift`. This changes the `offset` */
+    _shiftBins(shift: number): void {
+        if (shift > 0) {
+            this.bins = this.bins.slice(0, -shift);
+            this.bins.unshift(...new Array(shift).fill(0));
         } else {
-            const maxKey = Math.min(
-                this.maxKey + this._getGrowBySize(key - this.maxKey),
-                this.minKey + this.maxBins - 1
-            );
-            this.bins.push(...new Array(maxKey - this.maxKey).fill(0));
-            this.maxKey = maxKey;
+            this.bins = this.bins.slice(Math.abs(shift));
+            this.bins.push(...new Array(Math.abs(shift)).fill(0));
+        }
+
+        this.offset -= shift;
+    }
+
+    _centerBins(newMinKey: number, newMaxKey: number): void {
+        const middleKey =
+            newMinKey + Math.floor((newMaxKey - newMinKey + 1) / 2);
+        this._shiftBins(
+            Math.floor(this.offset + this.length() / 2) - middleKey
+        );
+    }
+
+    /** Grow the bins as necessary, and call _adjust */
+    _extendRange(key: number, secondKey?: number): void {
+        secondKey = secondKey || key;
+        const newMinKey = Math.min(key, secondKey, this.minKey);
+        const newMaxKey = Math.max(key, secondKey, this.maxKey);
+
+        if (this.length() === 0) {
+            this.bins = new Array(
+                this._getNewLength(newMinKey, newMaxKey)
+            ).fill(0);
+            this.offset = newMinKey;
+            this._adjust(newMinKey, newMaxKey);
+        } else if (
+            newMinKey >= this.minKey &&
+            newMaxKey < this.offset + this.length()
+        ) {
+            // No need to change the range, just update the min and max keys
+            this.minKey = newMinKey;
+            this.maxKey = newMaxKey;
+        } else {
+            // Grow the bins
+            const newLength = this._getNewLength(newMinKey, newMaxKey);
+            if (newLength > this.length()) {
+                this.bins.push(...new Array(newLength - this.length()).fill(0));
+            }
+            this._adjust(newMinKey, newMaxKey);
         }
     }
 
-    /**
-     * Return the size by which to grow the store's bins
-     */
-    _getGrowBySize(requiredGrowth: number): number {
-        return this.chunkSize * Math.ceil(requiredGrowth / this.chunkSize);
+    /** Calculate the bin index for the key, extending the range if necessary */
+    _getIndex(key: number): number {
+        if (key < this.minKey) {
+            if (this.isCollapsed) {
+                return 0;
+            }
+
+            this._extendRange(key);
+
+            if (this.isCollapsed) {
+                return 0;
+            }
+        } else if (key > this.maxKey) {
+            this._extendRange(key);
+        }
+
+        return key - this.offset;
     }
 }
 
