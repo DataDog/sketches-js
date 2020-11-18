@@ -7,7 +7,8 @@
 
 import {
     CollapsingLowestDenseStore,
-    CollapsingHighestDenseStore
+    CollapsingHighestDenseStore,
+    DenseStore
 } from './store';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
@@ -28,9 +29,9 @@ const defaultConfig: Required<SketchConfig> = {
 /** A quantile sketch with relative-error guarantees */
 export class DDSketch {
     /** Storage for positive values */
-    store: CollapsingLowestDenseStore;
+    store: DenseStore;
     /** Storage for negative values */
-    negativeStore: CollapsingHighestDenseStore;
+    negativeStore: DenseStore;
     /** The accuracy guarantee of the sketch */
     relativeAccuracy: number;
     /** The base for the exponential buckets */

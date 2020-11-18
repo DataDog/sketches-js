@@ -5,6 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export type { Store } from './Store';
+export { Store } from './Store';
+export { DenseStore } from './DenseStore';
 export { CollapsingLowestDenseStore } from './CollapsingLowestDenseStore';
 export { CollapsingHighestDenseStore } from './CollapsingHighestDenseStore';
