@@ -169,7 +169,7 @@ export class CollapsingLowestDenseStore implements Store {
     _adjust(newMinKey: number, newMaxKey: number): void {
         if (newMaxKey - newMinKey + 1 > this.length()) {
             // The range of keys is too wide, the lowest bins need to be collapsed
-            newMinKey = newMaxKey = this.length() + 1;
+            newMinKey = newMaxKey - this.length() + 1;
 
             if (newMinKey >= this.maxKey) {
                 // Put everything in the first bin
