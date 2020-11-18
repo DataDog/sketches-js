@@ -12,11 +12,11 @@ import { sumOfRange } from './util';
 const CHUNK_SIZE = 128;
 
 /**
- * `CollapsingLowestDenseStore` is a dense store that keeps all the bins between
+ * `CollapsingHighestDenseStore` is a dense store that keeps all the bins between
  * the bin for the `minKey` and the `maxKey`, but collapsing the left-most bins
  * if the number of bins exceeds `binLimit`
  */
-export class CollapsingLowestDenseStore implements Store {
+export class CollapsingHighestDenseStore implements Store {
     /** The maximum number of bins */
     binLimit: number;
     /** Storage for counts */
@@ -33,7 +33,7 @@ export class CollapsingLowestDenseStore implements Store {
     offset: number;
 
     /**
-     * Initialize a new CollapsingLowestDenseStore
+     * Initialize a new CollapsingHighestDenseStore
      *
      * @param binLimit The maximum number of bins
      * @param initialBins The initial number of bins (default 128)
@@ -96,7 +96,7 @@ export class CollapsingLowestDenseStore implements Store {
      *
      * @param store The store to merge into the caller store
      */
-    merge(store: CollapsingLowestDenseStore): void {
+    merge(store: CollapsingHighestDenseStore): void {
         if (store.count === 0) {
             return;
         }
@@ -110,23 +110,23 @@ export class CollapsingLowestDenseStore implements Store {
             this._extendRange(store.minKey, store.maxKey);
         }
 
-        const collapseStartIndex = store.minKey - store.offset;
-        let collapseEndIndex =
-            Math.min(this.minKey, store.maxKey + 1) - store.offset;
+        const collapseEndIndex = store.maxKey - store.offset + 1;
+        let collapseStartIndex =
+            Math.max(this.maxKey + 1, store.minKey) - store.offset;
         if (collapseEndIndex > collapseStartIndex) {
             const collapseCount = sumOfRange(
                 store.bins,
                 collapseStartIndex,
                 collapseEndIndex
             );
-            this.bins[0] += collapseCount;
+            this.bins[this.length() - 1] += collapseCount;
         } else {
-            collapseEndIndex = collapseStartIndex;
+            collapseStartIndex = collapseEndIndex;
         }
 
         for (
-            let key = collapseEndIndex + store.offset;
-            key < store.maxKey + 1;
+            let key = store.minKey;
+            key < collapseStartIndex + store.offset;
             key++
         ) {
             this.bins[key - this.offset] += store.bins[key - store.offset];
@@ -140,7 +140,7 @@ export class CollapsingLowestDenseStore implements Store {
      *
      * @param store The store to be copied into the caller store
      */
-    copy(store: CollapsingLowestDenseStore): void {
+    copy(store: CollapsingHighestDenseStore): void {
         this.bins = [...store.bins];
         this.count = store.count;
         this.minKey = store.minKey;
@@ -170,37 +170,36 @@ export class CollapsingLowestDenseStore implements Store {
     _adjust(newMinKey: number, newMaxKey: number): void {
         if (newMaxKey - newMinKey + 1 > this.length()) {
             // The range of keys is too wide, the lowest bins need to be collapsed
-            newMinKey = newMaxKey - this.length() + 1;
+            newMaxKey = newMinKey + this.length() + 1;
 
-            if (newMinKey >= this.maxKey) {
+            if (newMaxKey <= this.minKey) {
                 // Put everything in the first bin
                 this.offset = newMinKey;
-                this.minKey = newMinKey;
+                this.maxKey = newMaxKey;
                 this.bins.fill(0);
-                this.bins[0] = this.count;
+                this.bins[this.length() - 1] = this.count;
             } else {
                 const shift = this.offset - newMinKey;
-                if (shift < 0) {
-                    const collapseStartIndex = this.minKey - this.offset;
-                    const collapseEndIndex = newMinKey - this.offset;
+                if (shift > 0) {
+                    const collapseStartIndex = newMaxKey - this.offset + 1;
+                    const collapseEndIndex = this.maxKey - this.offset + 1;
                     const collapsedCount = sumOfRange(
                         this.bins,
                         collapseStartIndex,
                         collapseEndIndex
                     );
                     this.bins.fill(0, collapseStartIndex, collapseEndIndex);
-                    this.bins[collapseEndIndex] += collapsedCount;
-                    this.minKey = newMinKey;
+                    this.bins[collapseStartIndex - 1] += collapsedCount;
+                    this.maxKey = newMaxKey;
                     this._shiftBins(shift);
                 } else {
-                    this.minKey = newMinKey;
+                    this.maxKey = newMaxKey;
                     // Shift the buckets to make room for newMinKey
                     this._shiftBins(shift);
                 }
+                this.minKey = newMinKey;
+                this.isCollapsed = true;
             }
-
-            this.maxKey = newMaxKey;
-            this.isCollapsed = true;
         } else {
             this._centerBins(newMinKey, newMaxKey);
             this.minKey = newMinKey;
@@ -262,13 +261,13 @@ export class CollapsingLowestDenseStore implements Store {
     _getIndex(key: number): number {
         if (key < this.minKey) {
             if (this.isCollapsed) {
-                return 0;
+                return this.length() - 1;
             }
 
             this._extendRange(key);
 
             if (this.isCollapsed) {
-                return 0;
+                return this.length() - 1;
             }
         } else if (key > this.maxKey) {
             this._extendRange(key);

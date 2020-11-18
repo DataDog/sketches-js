@@ -7,3 +7,4 @@
 
 export type { Store } from './Store';
 export { CollapsingLowestDenseStore } from './CollapsingLowestDenseStore';
+export { CollapsingHighestDenseStore } from './CollapsingHighestDenseStore';

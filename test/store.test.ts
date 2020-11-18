@@ -5,14 +5,25 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import { CollapsingLowestDenseStore } from '../src/ddsketch/store';
+import {
+    CollapsingLowestDenseStore,
+    CollapsingHighestDenseStore
+} from '../src/ddsketch/store';
 import {
     generateDecreasing,
     generateIncreasing,
-    generateConstant
+    generateConstant,
+    generateConstantNegative,
+    generatePositiveAndNegative
 } from './datasets';
 
-const datasets = [generateIncreasing, generateDecreasing, generateConstant];
+const datasets = [
+    generateIncreasing,
+    generateDecreasing,
+    generateConstant,
+    generateConstantNegative,
+    generatePositiveAndNegative
+];
 
 const testBinLimits = [2048];
 const testSizes = [0, 1, 10, 1000];
@@ -76,6 +87,25 @@ describe('Store', () => {
                     for (const size of testSizes) {
                         const data = dataset(size);
                         const store = new CollapsingLowestDenseStore(binLimit);
+
+                        for (const value of data) {
+                            store.add(value);
+                        }
+
+                        evaluateStoreAccuracy(store, data);
+                    }
+                }
+            });
+        }
+    });
+
+    describe('CollapsingHighestDenseStore', () => {
+        for (const dataset of datasets) {
+            it(`is accurate for dataset '${dataset.name}'`, () => {
+                for (const binLimit of testBinLimits) {
+                    for (const size of testSizes) {
+                        const data = dataset(size);
+                        const store = new CollapsingHighestDenseStore(binLimit);
 
                         for (const value of data) {
                             store.add(value);

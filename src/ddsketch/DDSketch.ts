@@ -5,7 +5,10 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import { CollapsingLowestDenseStore } from './store';
+import {
+    CollapsingLowestDenseStore,
+    CollapsingHighestDenseStore
+} from './store';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
@@ -27,7 +30,7 @@ export class DDSketch {
     /** Storage for positive values */
     store: CollapsingLowestDenseStore;
     /** Storage for negative values */
-    negativeStore: CollapsingLowestDenseStore;
+    negativeStore: CollapsingHighestDenseStore;
     /** The accuracy guarantee of the sketch */
     relativeAccuracy: number;
     /** The base for the exponential buckets */
@@ -61,7 +64,7 @@ export class DDSketch {
         } = defaultConfig as SketchConfig
     ) {
         this.store = new CollapsingLowestDenseStore(binLimit);
-        this.negativeStore = new CollapsingLowestDenseStore(binLimit, 0);
+        this.negativeStore = new CollapsingHighestDenseStore(binLimit);
         this.relativeAccuracy = relativeAccuracy;
 
         this.zeroCount = 0;

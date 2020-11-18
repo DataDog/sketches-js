@@ -10,16 +10,20 @@ import {
     generateDecreasing,
     generateIncreasing,
     generateRandom,
-    generateConstant
+    generateConstant,
+    generateConstantNegative,
+    generatePositiveAndNegative
 } from './datasets';
 
 const datasets = [
     generateIncreasing,
     generateDecreasing,
     generateRandom,
-    generateConstant
+    generateConstant,
+    generateConstantNegative,
+    generatePositiveAndNegative
 ];
-const testSizes = [3, 5, 10, 100, 1000];
+const testSizes = [3, 5, 10, 100, 1000, 5000];
 const testQuantiles = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 1];
 
 const relativeAccuracy = 0.05;
