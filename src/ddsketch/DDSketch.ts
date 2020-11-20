@@ -5,11 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import {
-    CollapsingLowestDenseStore,
-    CollapsingHighestDenseStore,
-    DenseStore
-} from './store';
+import { DenseStore } from './store';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
@@ -64,8 +60,8 @@ export class DDSketch {
             binLimit = defaultConfig.binLimit
         } = defaultConfig as SketchConfig
     ) {
-        this.store = new CollapsingLowestDenseStore(binLimit);
-        this.negativeStore = new CollapsingHighestDenseStore(binLimit);
+        this.store = new DenseStore();
+        this.negativeStore = new DenseStore();
         this.relativeAccuracy = relativeAccuracy;
 
         this.zeroCount = 0;
