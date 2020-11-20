@@ -23,7 +23,7 @@ const datasets = [
     generateConstantNegative,
     generatePositiveAndNegative
 ];
-const testSizes = [3, 5, 10, 100, 1000];
+const testSizes = [3, 5, 10, 100, 1000, 5000];
 const testQuantiles = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 1];
 
 const relativeAccuracy = 0.05;
@@ -47,7 +47,7 @@ describe('DDSketch', () => {
 
             if (adjustedError > allowedError) {
                 console.error(
-                    `For quantile ${quantile}:\nSketch: ${sketchQ}\nData: ${dataQ}`
+                    `For q(${quantile}), size(${data.length}):\nSketch result: ${sketchQ}\nData result: ${dataQ}\nData: [${data}]\nSketch bins: [${sketch.store.bins}]`
                 );
             }
 
@@ -66,8 +66,8 @@ describe('DDSketch', () => {
         evaluateSketchAccuracy(sketch, data);
     });
 
-    it('is accurate for multiple sizes and quantiles', () => {
-        for (const dataset of datasets) {
+    for (const dataset of datasets) {
+        it(`is accurate for dataset '${dataset.name}'`, () => {
             for (const n of testSizes) {
                 const data = dataset(n);
                 const sketch = new DDSketch({
@@ -81,8 +81,8 @@ describe('DDSketch', () => {
 
                 evaluateSketchAccuracy(sketch, data);
             }
-        }
-    });
+        });
+    }
 
     describe('merging sketches', () => {
         it('allows a sketch with values to be merged into an empty sketch', () => {

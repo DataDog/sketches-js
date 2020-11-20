@@ -5,4 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export { DDSketch } from './ddsketch';
+export { Store } from './Store';
+export { DenseStore } from './DenseStore';
+export { CollapsingLowestDenseStore } from './CollapsingLowestDenseStore';
+export { CollapsingHighestDenseStore } from './CollapsingHighestDenseStore';

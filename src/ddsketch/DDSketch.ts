@@ -5,7 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import { CollapsingLowestDenseStore as Store } from './store';
+import { DenseStore } from './store';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
@@ -25,9 +25,9 @@ const defaultConfig: Required<SketchConfig> = {
 /** A quantile sketch with relative-error guarantees */
 export class DDSketch {
     /** Storage for positive values */
-    store: Store;
+    store: DenseStore;
     /** Storage for negative values */
-    negativeStore: Store;
+    negativeStore: DenseStore;
     /** The accuracy guarantee of the sketch */
     relativeAccuracy: number;
     /** The base for the exponential buckets */
@@ -60,8 +60,8 @@ export class DDSketch {
             binLimit = defaultConfig.binLimit
         } = defaultConfig as SketchConfig
     ) {
-        this.store = new Store(binLimit);
-        this.negativeStore = new Store(binLimit, 0);
+        this.store = new DenseStore();
+        this.negativeStore = new DenseStore();
         this.relativeAccuracy = relativeAccuracy;
 
         this.zeroCount = 0;
@@ -114,18 +114,12 @@ export class DDSketch {
         if (quantile < 0 || quantile > 1 || this.count === 0) {
             return NaN;
         }
-        if (quantile === 0) {
-            return this.min;
-        }
-        if (quantile === 1) {
-            return this.max;
-        }
 
         const rank = Math.floor(quantile * (this.count - 1) + 1);
 
         let quantileValue = 0;
         if (rank <= this.negativeStore.count) {
-            const key = this.negativeStore.reversedKeyAtRank(rank);
+            const key = this.negativeStore.keyAtRank(rank, true);
             quantileValue = -(2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
         } else if (rank <= this.zeroCount + this.negativeStore.count) {
             return 0;
