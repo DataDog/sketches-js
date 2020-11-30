@@ -7,3 +7,5 @@ dev,eslint-plugin-prettier,MIT,Teddy Katz
 dev,prettier,MIT,James Long
 dev,ts-jest,MIT,Kulshekhar Kabra
 dev,typescript,Apache-2.0,Copyright Microsoft Corporation
+import,math-float64-frexp,MIT,Athan Reines
+import,math-float64-ldexp,MIT,Athan Reines
