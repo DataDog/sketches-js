@@ -6,7 +6,7 @@
  */
 
 import { sumOfRange } from './util';
-import type { Store } from './Store';
+import type { Store } from './types';
 
 /** The default number of bins to grow when necessary */
 const CHUNK_SIZE = 128;
