@@ -5,7 +5,8 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export { Store } from './types';
-export { DenseStore } from './DenseStore';
-export { CollapsingLowestDenseStore } from './CollapsingLowestDenseStore';
-export { CollapsingHighestDenseStore } from './CollapsingHighestDenseStore';
+declare module 'math-float64-ldexp' {
+    function ldexp(mantissa: number, exponent: number): number;
+
+    export = ldexp;
+}

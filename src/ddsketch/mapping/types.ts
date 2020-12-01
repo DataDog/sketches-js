@@ -5,7 +5,11 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export { Store } from './types';
-export { DenseStore } from './DenseStore';
-export { CollapsingLowestDenseStore } from './CollapsingLowestDenseStore';
-export { CollapsingHighestDenseStore } from './CollapsingHighestDenseStore';
+export interface Mapping {
+    relativeAccuracy: number;
+    gamma: number;
+    minPossible: number;
+    maxPossible: number;
+    key: (value: number) => number;
+    value: (key: number) => number;
+}

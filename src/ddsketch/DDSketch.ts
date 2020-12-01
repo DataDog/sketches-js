@@ -6,6 +6,7 @@
  */
 
 import { DenseStore } from './store';
+import { Mapping, LogarithmicMapping } from './mapping';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 const DEFAULT_BIN_LIMIT = 2048;
@@ -24,21 +25,13 @@ const defaultConfig: Required<SketchConfig> = {
 
 /** A quantile sketch with relative-error guarantees */
 export class DDSketch {
+    mapping: Mapping;
     /** Storage for positive values */
     store: DenseStore;
     /** Storage for negative values */
     negativeStore: DenseStore;
-    /** The accuracy guarantee of the sketch */
-    relativeAccuracy: number;
-    /** The base for the exponential buckets */
-    gamma: number;
     /** The count of zero values */
     zeroCount: number;
-    /** Used for calculating logGamma(value) */
-    multiplier: number;
-    /** The smallest value the sketch can distinguish from 0 */
-    minPossible: number;
-
     /** The minimum value seen by the sketch */
     min: number;
     /** The maximum value seen by the sketch */
@@ -60,17 +53,11 @@ export class DDSketch {
             binLimit = defaultConfig.binLimit
         } = defaultConfig as SketchConfig
     ) {
+        this.mapping = new LogarithmicMapping(relativeAccuracy);
         this.store = new DenseStore();
         this.negativeStore = new DenseStore();
-        this.relativeAccuracy = relativeAccuracy;
 
         this.zeroCount = 0;
-
-        const gammaMantissa = (2 * relativeAccuracy) / (1 - relativeAccuracy);
-        this.gamma = 1 + gammaMantissa;
-        const gammaLn = Math.log1p(gammaMantissa);
-        this.multiplier = 1 / gammaLn;
-        this.minPossible = Number.MIN_VALUE * this.gamma;
 
         this.count = 0;
         this.min = Infinity;
@@ -84,11 +71,11 @@ export class DDSketch {
      * @param value The value to be added
      */
     accept(value: number): void {
-        if (value > this.minPossible) {
-            const key = Math.ceil(Math.log(value) * this.multiplier);
+        if (value > this.mapping.minPossible) {
+            const key = this.mapping.key(value);
             this.store.add(key);
-        } else if (value < -this.minPossible) {
-            const key = Math.ceil(Math.log(-value) * this.multiplier);
+        } else if (value < -this.mapping.minPossible) {
+            const key = this.mapping.key(-value);
             this.negativeStore.add(key);
         } else {
             this.zeroCount += 1;
@@ -120,14 +107,14 @@ export class DDSketch {
         let quantileValue = 0;
         if (rank <= this.negativeStore.count) {
             const key = this.negativeStore.keyAtRank(rank, true);
-            quantileValue = -(2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
+            quantileValue = -this.mapping.value(key);
         } else if (rank <= this.zeroCount + this.negativeStore.count) {
             return 0;
         } else {
             const key = this.store.keyAtRank(
                 rank - this.zeroCount - this.negativeStore.count
             );
-            quantileValue = (2 * Math.pow(this.gamma, key)) / (1 + this.gamma);
+            quantileValue = this.mapping.value(key);
         }
 
         return Math.max(quantileValue, this.min);
@@ -174,7 +161,7 @@ export class DDSketch {
      * @param sketch The sketch to be merged into the caller sketch
      */
     mergeable(sketch: DDSketch): boolean {
-        return this.gamma === sketch.gamma;
+        return this.mapping.gamma === sketch.mapping.gamma;
     }
 
     /**

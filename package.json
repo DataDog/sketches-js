@@ -13,6 +13,10 @@
     "lint": "eslint src/**/*",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "math-float64-frexp": "^1.0.0",
+    "math-float64-ldexp": "^1.0.1"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.14",
     "@typescript-eslint/eslint-plugin": "^4.2.0",

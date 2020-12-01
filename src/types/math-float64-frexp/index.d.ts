@@ -5,7 +5,8 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export { Store } from './types';
-export { DenseStore } from './DenseStore';
-export { CollapsingLowestDenseStore } from './CollapsingLowestDenseStore';
-export { CollapsingHighestDenseStore } from './CollapsingHighestDenseStore';
+declare module 'math-float64-frexp' {
+    function frexp(value: number): [number, number];
+
+    export = frexp;
+}
