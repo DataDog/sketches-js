@@ -10,15 +10,18 @@ import {
     generateDecreasing,
     generateIncreasing,
     generateRandom,
+    generateRandomIntegers,
     generateConstant,
     generateConstantNegative,
-    generatePositiveAndNegative
+    generatePositiveAndNegative,
+    Counter
 } from './datasets';
 
 const datasets = [
     generateIncreasing,
     generateDecreasing,
     generateRandom,
+    generateRandomIntegers,
     generateConstant,
     generateConstantNegative,
     generatePositiveAndNegative
@@ -31,8 +34,8 @@ const binLimit = 1024;
 
 const getQuantile = (data: number[], quantile: number) => {
     const sortedIncreasingData = data.sort((a, b) => a - b);
-    const rank = Math.floor(quantile * (data.length - 1) + 1);
-    return sortedIncreasingData[rank - 1];
+    const rank = Math.floor(quantile * (data.length - 1));
+    return sortedIncreasingData[rank];
 };
 
 describe('DDSketch', () => {
@@ -42,7 +45,8 @@ describe('DDSketch', () => {
             const dataQ = getQuantile(data, quantile);
             const error = Math.abs(sketchQ - dataQ);
 
-            const adjustedError = error - relativeAccuracy * Math.abs(dataQ);
+            const adjustedError =
+                error - sketch.mapping.relativeAccuracy * Math.abs(dataQ);
             const allowedError = 1e-15;
 
             if (adjustedError > allowedError) {
@@ -66,23 +70,59 @@ describe('DDSketch', () => {
         evaluateSketchAccuracy(sketch, data);
     });
 
-    for (const dataset of datasets) {
-        it(`is accurate for dataset '${dataset.name}'`, () => {
-            for (const n of testSizes) {
-                const data = dataset(n);
-                const sketch = new DDSketch({
-                    relativeAccuracy,
-                    binLimit
-                });
+    it('can have values with integer weights added to it', () => {
+        const data = generateRandomIntegers(100);
+        const sketch = new DDSketch({ relativeAccuracy });
+        const counter = new Counter(data);
 
-                for (const value of data) {
-                    sketch.accept(value);
+        for (const value of data) {
+            const count = counter.get(value);
+            sketch.accept(value, count);
+        }
+
+        evaluateSketchAccuracy(sketch, data);
+    });
+
+    it('can have values with decimal weights added to it', () => {
+        const data = generateIncreasing(100);
+        const sketch = new DDSketch({ relativeAccuracy });
+
+        for (const value of data) {
+            sketch.accept(value, 1.1);
+        }
+        sketch.accept(100, 110);
+
+        const dataMedian = 99;
+        const sketchMedian = sketch.getValueAtQuantile(0.5);
+        const error = Math.abs(sketchMedian - dataMedian);
+
+        expect(
+            error - relativeAccuracy * Math.abs(dataMedian)
+        ).toBeLessThanOrEqual(1e-15);
+        expect(Math.abs(sketch.count - 110 * 2)).toBeLessThan(1e-5);
+        expect(sketch.sum).toEqual(5445 + 11000);
+        expect(Math.abs(sketch.sum / sketch.count - 74.75)).toBeLessThan(1e-5);
+    });
+
+    describe('datasets', () => {
+        for (const dataset of datasets) {
+            it(`is accurate for dataset '${dataset.name}'`, () => {
+                for (const n of testSizes) {
+                    const data = dataset(n);
+                    const sketch = new DDSketch({
+                        relativeAccuracy,
+                        binLimit
+                    });
+
+                    for (const value of data) {
+                        sketch.accept(value);
+                    }
+
+                    evaluateSketchAccuracy(sketch, data);
                 }
-
-                evaluateSketchAccuracy(sketch, data);
-            }
-        });
-    }
+            });
+        }
+    });
 
     describe('merging sketches', () => {
         it('allows a sketch with values to be merged into an empty sketch', () => {

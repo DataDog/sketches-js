@@ -15,7 +15,8 @@ import {
     generateIncreasing,
     generateConstant,
     generateConstantNegative,
-    generatePositiveAndNegative
+    generatePositiveAndNegative,
+    Counter
 } from './datasets';
 
 const datasets = [
@@ -28,29 +29,6 @@ const datasets = [
 
 const testBinLimits = [2048];
 const testSizes = [0, 1, 10, 1000];
-
-/** Test helper that keeps track of the count of each unique value added to it */
-class Counter {
-    entries: { [key: string]: number };
-
-    constructor(values: number[]) {
-        this.entries = {};
-        this.addAll(values);
-    }
-
-    add(value: number) {
-        this.entries[value] = (this.entries[value] || 0) + 1;
-    }
-
-    addAll(values: number[]) {
-        values.forEach(value => this.add(value));
-    }
-
-    /** The number of times each `value` was added to the Counter */
-    values() {
-        return Object.values(this.entries);
-    }
-}
 
 /** Test helper to calculate the sum of the values in an array */
 const sumArray = (values: number[]) =>

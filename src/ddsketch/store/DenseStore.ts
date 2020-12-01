@@ -49,39 +49,43 @@ export class DenseStore implements Store<DenseStore> {
      * Update the counter at the specified index key, growing the number of bins if necessary
      *
      * @param key The key of the index to update
+     * @param weight The amount to weight the key (default 1.0)
      */
-    add(key: number): void {
+    add(key: number, weight = 1): void {
         const index = this._getIndex(key);
-        this.bins[index] += 1;
-        this.count += 1;
+        this.bins[index] += weight;
+        this.count += weight;
     }
 
     /**
      * Return the key for the value at the given rank
      *
+     * E.g., if the non-zero bins are [1, 1] for keys a, b with no offset
+     *
+     * if lower = True:
+     *     keyAtRank(x) = a for x in [0, 1)
+     *     keyAtRank(x) = b for x in [1, 2)
+     * if lower = False:
+     *     keyAtRank(x) = a for x in (-1, 0]
+     *     keyAtRank(x) = b for x in (0, 1]
+     *
      * @param rank The rank at which to retrieve the key
-     * @param reverse Whether to iterate in reverse order
      */
-    keyAtRank(rank: number, reverse = false): number {
-        if (reverse) {
-            rank = this.count + 1 - rank;
-        }
-
+    keyAtRank(rank: number, lower = true): number {
         let runningCount = 0;
 
         for (let i = 0; i < this.length(); i++) {
             const bin = this.bins[i];
             runningCount += bin;
-            if (runningCount >= rank) {
+            if (
+                (lower && runningCount > rank) ||
+                (!lower && runningCount >= rank + 1)
+            ) {
                 return i + this.offset;
             }
         }
 
-        if (reverse) {
-            return this.minKey;
-        } else {
-            return this.maxKey;
-        }
+        return this.maxKey;
     }
 
     /**
