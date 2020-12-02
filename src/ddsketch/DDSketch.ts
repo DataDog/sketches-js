@@ -69,21 +69,28 @@ export class DDSketch {
      * Add a value to the sketch
      *
      * @param value The value to be added
+     * @param weight The amount to weight the value (default 1.0)
+     *
+     * @throws Error if `weight` is 0 or negative
      */
-    accept(value: number): void {
+    accept(value: number, weight = 1): void {
+        if (weight <= 0) {
+            throw Error('Weight must be a positive number');
+        }
+
         if (value > this.mapping.minPossible) {
             const key = this.mapping.key(value);
-            this.store.add(key);
+            this.store.add(key, weight);
         } else if (value < -this.mapping.minPossible) {
             const key = this.mapping.key(-value);
-            this.negativeStore.add(key);
+            this.negativeStore.add(key, weight);
         } else {
-            this.zeroCount += 1;
+            this.zeroCount += weight;
         }
 
         /* Keep track of summary stats */
-        this.count += 1;
-        this.sum += value;
+        this.count += weight;
+        this.sum += value * weight;
         if (value < this.min) {
             this.min = value;
         }
@@ -102,13 +109,14 @@ export class DDSketch {
             return NaN;
         }
 
-        const rank = Math.floor(quantile * (this.count - 1) + 1);
+        const rank = quantile * (this.count - 1);
 
         let quantileValue = 0;
-        if (rank <= this.negativeStore.count) {
-            const key = this.negativeStore.keyAtRank(rank, true);
+        if (rank < this.negativeStore.count) {
+            const reversedRank = this.negativeStore.count - rank - 1;
+            const key = this.negativeStore.keyAtRank(reversedRank, false);
             quantileValue = -this.mapping.value(key);
-        } else if (rank <= this.zeroCount + this.negativeStore.count) {
+        } else if (rank < this.zeroCount + this.negativeStore.count) {
             return 0;
         } else {
             const key = this.store.keyAtRank(
