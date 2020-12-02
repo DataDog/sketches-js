@@ -6,6 +6,7 @@
  */
 
 import { KeyMapping } from './KeyMapping';
+import { IndexMapping as IndexMappingProto } from '../proto/compiled';
 
 /**
  * A memory-optimal KeyMapping, i.e., given a targeted relative accuracy, it
@@ -13,8 +14,8 @@ import { KeyMapping } from './KeyMapping';
  * done by logarithmically mapping floating-point values to integers.
  */
 export class LogarithmicMapping extends KeyMapping {
-    constructor(relativeAccuracy: number) {
-        super(relativeAccuracy);
+    constructor(relativeAccuracy: number, offset = 0) {
+        super(relativeAccuracy, offset);
         this._multiplier *= Math.log(2);
     }
 
@@ -24,5 +25,9 @@ export class LogarithmicMapping extends KeyMapping {
 
     _powGamma(value: number): number {
         return Math.pow(2, value / this._multiplier);
+    }
+
+    _protoInterpolation(): IndexMappingProto.Interpolation {
+        return IndexMappingProto.Interpolation.NONE;
     }
 }

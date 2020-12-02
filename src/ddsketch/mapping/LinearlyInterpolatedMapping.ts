@@ -8,6 +8,7 @@
 import { KeyMapping } from './KeyMapping';
 import frexp from 'math-float64-frexp';
 import ldexp from 'math-float64-ldexp';
+import { IndexMapping as IndexMappingProto } from '../proto/compiled';
 
 /**
  * A fast KeyMapping that approximates the memory-optimal one
@@ -16,8 +17,8 @@ import ldexp from 'math-float64-ldexp';
  * linearly interpolating the logarithm in-between.
  */
 export class LinearlyInterpolatedMapping extends KeyMapping {
-    constructor(relativeAccuracy: number) {
-        super(relativeAccuracy);
+    constructor(relativeAccuracy: number, offset = 0) {
+        super(relativeAccuracy, offset);
     }
 
     /**
@@ -47,5 +48,9 @@ export class LinearlyInterpolatedMapping extends KeyMapping {
 
     _powGamma(value: number): number {
         return Math.pow(2, value / this._multiplier);
+    }
+
+    _protoInterpolation(): IndexMappingProto.Interpolation {
+        return IndexMappingProto.Interpolation.LINEAR;
     }
 }

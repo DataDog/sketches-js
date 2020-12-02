@@ -5,7 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import type { Mapping } from '../src/ddsketch/mapping';
+import { KeyMapping, Mapping } from '../src/ddsketch/mapping';
 import {
     LogarithmicMapping,
     LinearlyInterpolatedMapping,
@@ -16,6 +16,7 @@ describe('Mapping', () => {
     const relativeAccuracyMultiplier = 1 - Math.sqrt(2) * 1e-1;
     const minRelativeAccuracy = 1e-8;
     const INITIAL_RELATIVE_ACCURACY = 1 - 1e-3;
+    const testOffsets = [0, 1, -12.23, 7768.3];
 
     const calculateRelativeError = (
         expectedMin: number,
@@ -84,36 +85,93 @@ describe('Mapping', () => {
         return maxRelativeAccuracy;
     };
 
-    it('is accurate for LogarithmicMapping', () => {
-        let relativeAccuracy = INITIAL_RELATIVE_ACCURACY;
+    describe('LogarithmicMapping', () => {
+        it('is accurate', () => {
+            let relativeAccuracy = INITIAL_RELATIVE_ACCURACY;
 
-        while (relativeAccuracy >= minRelativeAccuracy) {
-            const mapping = new LogarithmicMapping(relativeAccuracy);
-            const maxRelativeAccuracy = evaluateValueRelativeAccuracy(mapping);
-            expect(maxRelativeAccuracy).toBeLessThan(mapping.relativeAccuracy);
-            relativeAccuracy *= relativeAccuracyMultiplier;
-        }
+            while (relativeAccuracy >= minRelativeAccuracy) {
+                const mapping = new LogarithmicMapping(relativeAccuracy);
+                const maxRelativeAccuracy = evaluateValueRelativeAccuracy(
+                    mapping
+                );
+                expect(maxRelativeAccuracy).toBeLessThan(
+                    mapping.relativeAccuracy
+                );
+                relativeAccuracy *= relativeAccuracyMultiplier;
+            }
+        });
+
+        it('can be initialized with an offset', () => {
+            for (const offset of testOffsets) {
+                const mapping = new LogarithmicMapping(0.01, offset);
+                expect(mapping.key(1)).toEqual(offset);
+            }
+        });
+
+        it('can be serialized to and from a protobuf', () => {
+            const relativeAccuracies = [1e-1, 1e-2, 1e-8];
+
+            for (const relativeAccuracy of relativeAccuracies) {
+                for (const offset of testOffsets) {
+                    const mapping = new LogarithmicMapping(
+                        relativeAccuracy,
+                        offset
+                    );
+                    const decodedMapping = KeyMapping.fromProto(
+                        mapping.toProto()
+                    );
+                    expect(decodedMapping.constructor.name).toEqual(
+                        mapping.constructor.name
+                    );
+                    expect(
+                        Math.abs(
+                            decodedMapping.relativeAccuracy -
+                                mapping.relativeAccuracy
+                        )
+                    ).toBeLessThan(1e-7);
+                    expect(
+                        Math.abs(decodedMapping.value(0) - mapping.value(0))
+                    ).toBeLessThan(1e-7);
+                }
+            }
+        });
     });
 
-    it('is accurate for LinearlyInterpolatedMapping', () => {
-        let relativeAccuracy = INITIAL_RELATIVE_ACCURACY;
+    describe('LinearlyInterpolatedMapping', () => {
+        it('is accurate', () => {
+            let relativeAccuracy = INITIAL_RELATIVE_ACCURACY;
 
-        while (relativeAccuracy >= minRelativeAccuracy) {
-            const mapping = new LinearlyInterpolatedMapping(relativeAccuracy);
-            const maxRelativeAccuracy = evaluateValueRelativeAccuracy(mapping);
-            expect(maxRelativeAccuracy).toBeLessThan(mapping.relativeAccuracy);
-            relativeAccuracy *= relativeAccuracyMultiplier;
-        }
+            while (relativeAccuracy >= minRelativeAccuracy) {
+                const mapping = new LinearlyInterpolatedMapping(
+                    relativeAccuracy
+                );
+                const maxRelativeAccuracy = evaluateValueRelativeAccuracy(
+                    mapping
+                );
+                expect(maxRelativeAccuracy).toBeLessThan(
+                    mapping.relativeAccuracy
+                );
+                relativeAccuracy *= relativeAccuracyMultiplier;
+            }
+        });
     });
 
-    it('is accurate for CubicallyInterpolatedMapping', () => {
-        let relativeAccuracy = INITIAL_RELATIVE_ACCURACY;
+    describe('CubicallyInterpolatedMapping', () => {
+        it('is accurate', () => {
+            let relativeAccuracy = INITIAL_RELATIVE_ACCURACY;
 
-        while (relativeAccuracy >= minRelativeAccuracy) {
-            const mapping = new CubicallyInterpolatedMapping(relativeAccuracy);
-            const maxRelativeAccuracy = evaluateValueRelativeAccuracy(mapping);
-            expect(maxRelativeAccuracy).toBeLessThan(mapping.relativeAccuracy);
-            relativeAccuracy *= relativeAccuracyMultiplier;
-        }
+            while (relativeAccuracy >= minRelativeAccuracy) {
+                const mapping = new CubicallyInterpolatedMapping(
+                    relativeAccuracy
+                );
+                const maxRelativeAccuracy = evaluateValueRelativeAccuracy(
+                    mapping
+                );
+                expect(maxRelativeAccuracy).toBeLessThan(
+                    mapping.relativeAccuracy
+                );
+                relativeAccuracy *= relativeAccuracyMultiplier;
+            }
+        });
     });
 });
