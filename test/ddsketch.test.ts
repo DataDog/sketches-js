@@ -30,7 +30,6 @@ const testSizes = [3, 5, 10, 100, 1000, 5000];
 const testQuantiles = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 1];
 
 const relativeAccuracy = 0.05;
-const binLimit = 1024;
 
 const getQuantile = (data: number[], quantile: number) => {
     const sortedIncreasingData = data.sort((a, b) => a - b);
@@ -49,7 +48,7 @@ describe('DDSketch', () => {
                 error - sketch.mapping.relativeAccuracy * Math.abs(dataQ);
             const allowedError = 1e-15;
 
-            if (adjustedError > allowedError) {
+            if (Number.isNaN(adjustedError) || adjustedError > allowedError) {
                 console.error(
                     `For q(${quantile}), size(${data.length}):\nSketch result: ${sketchQ}\nData result: ${dataQ}\nData: [${data}]\nSketch bins: [${sketch.store.bins}]`
                 );
@@ -104,14 +103,29 @@ describe('DDSketch', () => {
         expect(Math.abs(sketch.sum / sketch.count - 74.75)).toBeLessThan(1e-5);
     });
 
+    it('can be serialized to and from a protobuf', () => {
+        const data = generateIncreasing(100);
+        const sketch = new DDSketch({ relativeAccuracy });
+
+        for (const value of data) {
+            sketch.accept(value);
+        }
+
+        evaluateSketchAccuracy(sketch, data);
+
+        const encodedProto = sketch.toProto();
+        const decodedProto = DDSketch.fromProto(encodedProto);
+
+        evaluateSketchAccuracy(decodedProto, data);
+    });
+
     describe('datasets', () => {
         for (const dataset of datasets) {
             it(`is accurate for dataset '${dataset.name}'`, () => {
                 for (const n of testSizes) {
                     const data = dataset(n);
                     const sketch = new DDSketch({
-                        relativeAccuracy,
-                        binLimit
+                        relativeAccuracy
                     });
 
                     for (const value of data) {
@@ -134,8 +148,7 @@ describe('DDSketch', () => {
             for (const n of testSizes) {
                 const data = generateIncreasing(n);
                 const sketch1 = new DDSketch({
-                    relativeAccuracy,
-                    binLimit
+                    relativeAccuracy
                 });
 
                 for (const value of data) {
@@ -143,8 +156,7 @@ describe('DDSketch', () => {
                 }
 
                 const sketch2 = new DDSketch({
-                    relativeAccuracy,
-                    binLimit
+                    relativeAccuracy
                 });
 
                 expect(sketch2.count).toEqual(0);
@@ -160,12 +172,10 @@ describe('DDSketch', () => {
             for (const n of testSizes) {
                 const data = generateIncreasing(n);
                 const sketch1 = new DDSketch({
-                    relativeAccuracy,
-                    binLimit
+                    relativeAccuracy
                 });
                 const sketch2 = new DDSketch({
-                    relativeAccuracy,
-                    binLimit
+                    relativeAccuracy
                 });
 
                 for (let i = 0; i < n; i++) {
@@ -187,12 +197,10 @@ describe('DDSketch', () => {
             const data1 = generateRandom(100);
             const data2 = generateRandom(50);
             const sketch1 = new DDSketch({
-                relativeAccuracy,
-                binLimit
+                relativeAccuracy
             });
             const sketch2 = new DDSketch({
-                relativeAccuracy,
-                binLimit
+                relativeAccuracy
             });
 
             for (const value of data1) {

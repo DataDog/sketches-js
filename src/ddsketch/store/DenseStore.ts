@@ -7,6 +7,7 @@
 
 import { sumOfRange } from './util';
 import type { Store } from './types';
+import { Store as ProtoStore, IStore } from '../proto/compiled';
 
 /** The default number of bins to grow when necessary */
 const CHUNK_SIZE = 128;
@@ -228,5 +229,35 @@ export class DenseStore implements Store<DenseStore> {
         }
 
         return key - this.offset;
+    }
+
+    toProto(): IStore {
+        return ProtoStore.create({
+            contiguousBinCounts: this.bins,
+            contiguousBinIndexOffset: this.offset
+        });
+    }
+
+    static fromProto(protoStore?: IStore | null): DenseStore {
+        if (
+            !protoStore ||
+            /* Double equals (==) is intentional here to check for
+             * `null` | `undefined` without including `0` */
+            protoStore.contiguousBinCounts == null ||
+            protoStore.contiguousBinIndexOffset == null
+        ) {
+            throw Error('Failed to decode store from protobuf');
+        }
+
+        const store = new this();
+        let index = protoStore.contiguousBinIndexOffset;
+        store.offset = index;
+
+        for (const count of protoStore.contiguousBinCounts) {
+            store.add(index, count);
+            index += 1;
+        }
+
+        return store;
     }
 }

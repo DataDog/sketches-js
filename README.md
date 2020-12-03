@@ -27,7 +27,6 @@ To configure the sketch's parameters:
 ```js
 const sketch = new DDSketch({
   relativeAccuracy: 0.05, // defaults to 0.01
-  binLimit: 1024,         // defaults to 2048
 });
 ```
 

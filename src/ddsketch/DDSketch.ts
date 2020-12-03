@@ -6,25 +6,25 @@
  */
 
 import { DenseStore } from './store';
-import { Mapping, LogarithmicMapping } from './mapping';
+import { Mapping, KeyMapping, LogarithmicMapping } from './mapping';
+import { DDSketch as ProtoDDSketch } from './proto/compiled';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
-const DEFAULT_BIN_LIMIT = 2048;
 
-interface SketchConfig {
-    /** The accuracy guarantee of the sketch, between 0-1 (default 0.01) */
-    relativeAccuracy?: number;
-    /** The maximum number of bins that the underlying stores can grow to (default 2048) */
-    binLimit?: number;
+interface BaseSketchConfig {
+    /** The mapping between values and indicies for the sketch */
+    mapping: Mapping;
+    /** Storage for positive values */
+    store: DenseStore;
+    /** Storage for negative values */
+    negativeStore: DenseStore;
+    /** The number of zeroes added to the sketch */
+    zeroCount: number;
 }
 
-const defaultConfig: Required<SketchConfig> = {
-    relativeAccuracy: DEFAULT_RELATIVE_ACCURACY,
-    binLimit: DEFAULT_BIN_LIMIT
-};
-
-/** A quantile sketch with relative-error guarantees */
-export class DDSketch {
+/** Base class for DDSketch*/
+class BaseDDSketch {
+    /** The mapping between values and indicies for the sketch */
     mapping: Mapping;
     /** Storage for positive values */
     store: DenseStore;
@@ -41,25 +41,20 @@ export class DDSketch {
     /** The sum of the values seen by the sketch */
     sum: number;
 
-    /**
-     * Initialize a new DDSketch
-     *
-     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
-     * @param binLimit The maximum number of bins that the underlying store can grow to (default 2048)
-     */
-    constructor(
-        {
-            relativeAccuracy = defaultConfig.relativeAccuracy,
-            binLimit = defaultConfig.binLimit
-        } = defaultConfig as SketchConfig
-    ) {
-        this.mapping = new LogarithmicMapping(relativeAccuracy);
-        this.store = new DenseStore();
-        this.negativeStore = new DenseStore();
+    constructor({
+        mapping,
+        store,
+        negativeStore,
+        zeroCount
+    }: BaseSketchConfig) {
+        this.mapping = mapping;
+        this.store = store;
+        this.negativeStore = negativeStore;
 
-        this.zeroCount = 0;
+        this.zeroCount = zeroCount;
 
-        this.count = 0;
+        this.count =
+            this.negativeStore.count + this.zeroCount + this.store.count;
         this.min = Infinity;
         this.max = -Infinity;
         this.sum = 0;
@@ -125,7 +120,7 @@ export class DDSketch {
             quantileValue = this.mapping.value(key);
         }
 
-        return Math.max(quantileValue, this.min);
+        return quantileValue;
     }
 
     /**
@@ -186,5 +181,63 @@ export class DDSketch {
         this.max = sketch.max;
         this.count = sketch.count;
         this.sum = sketch.sum;
+    }
+
+    /** Serialize a DDSketch to protobuf format */
+    toProto(): Uint8Array {
+        const message = ProtoDDSketch.create({
+            mapping: this.mapping.toProto(),
+            positiveValues: this.store.toProto(),
+            negativeValues: this.negativeStore.toProto(),
+            zeroCount: this.zeroCount
+        });
+        return ProtoDDSketch.encode(message).finish();
+    }
+
+    /**
+     * Deserialize a DDSketch from protobuf data
+     *
+     * Note: `fromProto` currently loses summary statistics for the original
+     * sketch (i.e. `min`, `max`)
+     *
+     * @param buffer Byte array containing DDSketch in protobuf format (from DDSketch.toProto)
+     */
+    static fromProto(buffer: Uint8Array): DDSketch {
+        const decoded = ProtoDDSketch.decode(buffer);
+        const mapping = KeyMapping.fromProto(decoded.mapping);
+        const store = DenseStore.fromProto(decoded.positiveValues);
+        const negativeStore = DenseStore.fromProto(decoded.negativeValues);
+        const zeroCount = decoded.zeroCount;
+
+        return new BaseDDSketch({ mapping, store, negativeStore, zeroCount });
+    }
+}
+
+interface SketchConfig {
+    /** The accuracy guarantee of the sketch, between 0-1 (default 0.01) */
+    relativeAccuracy?: number;
+}
+
+const defaultConfig: Required<SketchConfig> = {
+    relativeAccuracy: DEFAULT_RELATIVE_ACCURACY
+};
+
+/** A quantile sketch with relative-error guarantees */
+export class DDSketch extends BaseDDSketch {
+    /**
+     * Initialize a new DDSketch
+     *
+     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
+     */
+    constructor(
+        {
+            relativeAccuracy = DEFAULT_RELATIVE_ACCURACY
+        } = defaultConfig as SketchConfig
+    ) {
+        const mapping = new LogarithmicMapping(relativeAccuracy);
+        const store = new DenseStore();
+        const negativeStore = new DenseStore();
+
+        super({ mapping, store, negativeStore, zeroCount: 0 });
     }
 }

@@ -68,6 +68,11 @@ describe('Store', () => {
                     }
 
                     evaluateStoreAccuracy(store, data);
+
+                    // Test protobuf conversion
+                    const decodedStore = DenseStore.fromProto(store.toProto());
+
+                    evaluateStoreAccuracy(decodedStore, data);
                 }
             });
         }

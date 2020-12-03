@@ -11,11 +11,13 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
     "lint": "eslint src/**/*",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate:proto": "pbjs -t static-module -w commonjs -o src/ddsketch/proto/compiled.js src/ddsketch/proto/DDSketch.proto && pbts -o src/ddsketch/proto/compiled.d.ts src/ddsketch/proto/compiled.js"
   },
   "dependencies": {
     "math-float64-frexp": "^1.0.0",
-    "math-float64-ldexp": "^1.0.1"
+    "math-float64-ldexp": "^1.0.1",
+    "protobufjs": "^6.10.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.14",

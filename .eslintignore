@@ -1,2 +1,4 @@
 node_modules
 dist
+src/ddsketch/proto/compiled.js
+src/ddsketch/proto/compiled.d.ts
