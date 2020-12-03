@@ -24,6 +24,7 @@ interface BaseSketchConfig {
 
 /** Base class for DDSketch*/
 class BaseDDSketch {
+    /** The mapping between values and indicies for the sketch */
     mapping: Mapping;
     /** Storage for positive values */
     store: DenseStore;
@@ -40,12 +41,6 @@ class BaseDDSketch {
     /** The sum of the values seen by the sketch */
     sum: number;
 
-    /**
-     * Initialize a new DDSketch
-     *
-     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
-     * @param binLimit The maximum number of bins that the underlying store can grow to (default 2048)
-     */
     constructor({
         mapping,
         store,
@@ -229,6 +224,11 @@ const defaultConfig: Required<SketchConfig> = {
 
 /** A quantile sketch with relative-error guarantees */
 export class DDSketch extends BaseDDSketch {
+    /**
+     * Initialize a new DDSketch
+     *
+     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
+     */
     constructor(
         {
             relativeAccuracy = DEFAULT_RELATIVE_ACCURACY
