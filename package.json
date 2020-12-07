@@ -1,13 +1,13 @@
 {
   "name": "@datadog/sketches-js",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "TypeScript implementation of DDSketch, a distributed quantile sketch algorithm ",
   "license": "Apache-2.0",
   "repository": "https://github.com/DataDog/sketches-js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist/",
+    "dist/**/*",
     "README",
     "LICENSE"
   ],
