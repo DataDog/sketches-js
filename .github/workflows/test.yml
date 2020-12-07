@@ -1,0 +1,22 @@
+# This workflow will do a clean install of node dependencies, lint the source code and run tests
+
+name: Test
+
+on: pull_request
+
+jobs:
+  test-and-lint:
+    name: Run tests and lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - run: yarn install
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn test
+      - run: yarn build
