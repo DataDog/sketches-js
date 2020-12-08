@@ -1,6 +1,6 @@
 # This workflow will do a clean install of node dependencies, lint the source code and run tests
 
-name: Test
+name: Continuous Integration
 
 on: pull_request
 
