@@ -1,5 +1,7 @@
 # sketches-js
 
+![Continuous Integration](https://github.com/DataDog/sketches-js/workflows/Continuous%20Integration/badge.svg) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 This repo contains the TypeScript implementation of the distributed quantile sketch algorithm [DDSketch](http://www.vldb.org/pvldb/vol12/p2195-masson.pdf). DDSketch is mergeable, meaning that multiple sketches from distributed systems can be combined in a central node.
 
 ## Installation
