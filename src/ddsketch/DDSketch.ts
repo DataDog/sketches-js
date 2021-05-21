@@ -20,6 +20,9 @@ interface BaseSketchConfig {
     negativeStore: DenseStore;
     /** The number of zeroes added to the sketch */
     zeroCount: number;
+    min: number;
+    max: number;
+    sum: number;
 }
 
 /** Base class for DDSketch*/
@@ -45,7 +48,10 @@ class BaseDDSketch {
         mapping,
         store,
         negativeStore,
-        zeroCount
+        zeroCount,
+        min = Infinity,
+        max = -Infinity,
+        sum = 0
     }: BaseSketchConfig) {
         this.mapping = mapping;
         this.store = store;
@@ -55,9 +61,9 @@ class BaseDDSketch {
 
         this.count =
             this.negativeStore.count + this.zeroCount + this.store.count;
-        this.min = Infinity;
-        this.max = -Infinity;
-        this.sum = 0;
+        this.min = min;
+        this.max = max;
+        this.sum = sum;
     }
 
     /**
@@ -189,16 +195,16 @@ class BaseDDSketch {
             mapping: this.mapping.toProto(),
             positiveValues: this.store.toProto(),
             negativeValues: this.negativeStore.toProto(),
-            zeroCount: this.zeroCount
+            zeroCount: this.zeroCount,
+            min: this.min,
+            max: this.max,
+            sum: this.sum
         });
         return ProtoDDSketch.encode(message).finish();
     }
 
     /**
      * Deserialize a DDSketch from protobuf data
-     *
-     * Note: `fromProto` currently loses summary statistics for the original
-     * sketch (i.e. `min`, `max`)
      *
      * @param buffer Byte array containing DDSketch in protobuf format (from DDSketch.toProto)
      */
@@ -208,8 +214,11 @@ class BaseDDSketch {
         const store = DenseStore.fromProto(decoded.positiveValues);
         const negativeStore = DenseStore.fromProto(decoded.negativeValues);
         const zeroCount = decoded.zeroCount;
+        const min = decoded.min;
+        const max = decoded.max;
+        const sum = decoded.sum;
 
-        return new BaseDDSketch({ mapping, store, negativeStore, zeroCount });
+        return new BaseDDSketch({ mapping, store, negativeStore, zeroCount, min, max, sum });
     }
 }
 
@@ -238,6 +247,6 @@ export class DDSketch extends BaseDDSketch {
         const store = new DenseStore();
         const negativeStore = new DenseStore();
 
-        super({ mapping, store, negativeStore, zeroCount: 0 });
+        super({ mapping, store, negativeStore, zeroCount: 0, min: Infinity, max: -Infinity, sum: 0 });
     }
 }
