@@ -5,7 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-declare module 'math-float64-frexp' {
+declare module '@stdlib/math-base-special-frexp' {
     function frexp(value: number): [number, number];
 
     export = frexp;
