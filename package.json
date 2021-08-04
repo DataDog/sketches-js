@@ -32,8 +32,6 @@
     "generate:proto": "pbjs -t static-module -w commonjs -o src/ddsketch/proto/compiled.js src/ddsketch/proto/DDSketch.proto && pbts -o src/ddsketch/proto/compiled.d.ts src/ddsketch/proto/compiled.js"
   },
   "dependencies": {
-    "@stdlib/math-base-special-frexp": "^0.0.4",
-    "@stdlib/math-base-special-ldexp": "^0.0.4",
     "protobufjs": "^6.10.2"
   },
   "devDependencies": {

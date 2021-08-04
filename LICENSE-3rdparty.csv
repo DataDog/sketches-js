@@ -8,6 +8,4 @@ dev,jest,MIT,Facebook
 dev,prettier,MIT,James Long
 dev,ts-jest,MIT,Kulshekhar Kabra
 dev,typescript,Apache-2.0,Copyright Microsoft Corporation
-import,@stdlib/math-base-special-frexp,Apache-2.0,Copyright 2016-2021 The Stdlib Authors
-import,@stdlib/math-base-special-ldexp,Apache-2.0,Copyright 2016-2021 The Stdlib Authors
 import,protobufjs,BSD-3-Clause,Daniel Wirtz
