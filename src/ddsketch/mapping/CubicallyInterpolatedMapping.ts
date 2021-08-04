@@ -8,7 +8,7 @@
 import { KeyMapping } from './KeyMapping';
 import frexp from '@stdlib/math-base-special-frexp';
 import ldexp from '@stdlib/math-base-special-ldexp';
-import { IndexMapping as IndexMappingProto } from '../proto/compiled';
+import type { IndexMapping as IndexMappingProtoType } from '../proto/compiled';
 
 /**
  * A fast KeyMapping that approximates the memory-optimal LogarithmicMapping by
@@ -67,7 +67,8 @@ export class CubicallyInterpolatedMapping extends KeyMapping {
         return this._cubicExp2Approx(value / this._multiplier);
     }
 
-    _protoInterpolation(): IndexMappingProto.Interpolation {
+    _protoInterpolation(): IndexMappingProtoType.Interpolation {
+        const { IndexMapping: IndexMappingProto } = require('../proto/compiled');
         return IndexMappingProto.Interpolation.CUBIC;
     }
 }

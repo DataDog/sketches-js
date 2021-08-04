@@ -8,7 +8,7 @@
 import { KeyMapping } from './KeyMapping';
 import frexp from '@stdlib/math-base-special-frexp';
 import ldexp from '@stdlib/math-base-special-ldexp';
-import { IndexMapping as IndexMappingProto } from '../proto/compiled';
+import { IndexMapping as IndexMappingProtoType } from '../proto/compiled';
 
 /**
  * A fast KeyMapping that approximates the memory-optimal one
@@ -50,7 +50,8 @@ export class LinearlyInterpolatedMapping extends KeyMapping {
         return Math.pow(2, value / this._multiplier);
     }
 
-    _protoInterpolation(): IndexMappingProto.Interpolation {
+    _protoInterpolation(): IndexMappingProtoType.Interpolation {
+        const { IndexMapping: IndexMappingProto } = require('../proto/compiled');
         return IndexMappingProto.Interpolation.LINEAR;
     }
 }

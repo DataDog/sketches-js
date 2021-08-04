@@ -6,7 +6,7 @@
  */
 
 import { KeyMapping } from './KeyMapping';
-import { IndexMapping as IndexMappingProto } from '../proto/compiled';
+import { IndexMapping as IndexMappingProtoType } from '../proto/compiled';
 
 /**
  * A memory-optimal KeyMapping, i.e., given a targeted relative accuracy, it
@@ -27,7 +27,8 @@ export class LogarithmicMapping extends KeyMapping {
         return Math.pow(2, value / this._multiplier);
     }
 
-    _protoInterpolation(): IndexMappingProto.Interpolation {
+    _protoInterpolation(): IndexMappingProtoType.Interpolation {
+        const { IndexMapping: IndexMappingProto } = require('../proto/compiled');
         return IndexMappingProto.Interpolation.NONE;
     }
 }

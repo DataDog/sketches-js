@@ -10,9 +10,9 @@ import {
     LogarithmicMapping,
     CubicallyInterpolatedMapping
 } from './index';
-import {
+import type {
     IIndexMapping,
-    IndexMapping as ProtoIndexMapping
+    IndexMapping as ProtoIndexMappingType
 } from '../proto/compiled';
 import type { Mapping } from './types';
 
@@ -78,6 +78,7 @@ export class KeyMapping implements Mapping {
     }
 
     toProto(): IIndexMapping {
+        const { IndexMapping: ProtoIndexMapping } = require('../proto/compiled');
         return ProtoIndexMapping.create({
             gamma: this.gamma,
             indexOffset: this._offset,
@@ -86,6 +87,8 @@ export class KeyMapping implements Mapping {
     }
 
     static fromProto(protoMapping?: IIndexMapping | null): KeyMapping {
+        const { IndexMapping: ProtoIndexMapping } = require('../proto/compiled');
+
         if (
             !protoMapping ||
             /* Double equals (==) is intentional here to check for
@@ -126,7 +129,8 @@ export class KeyMapping implements Mapping {
         return Math.pow(2, value / this._multiplier);
     }
 
-    _protoInterpolation(): ProtoIndexMapping.Interpolation {
+    _protoInterpolation(): ProtoIndexMappingType.Interpolation {
+        const { IndexMapping: ProtoIndexMapping } = require('../proto/compiled');
         return ProtoIndexMapping.Interpolation.NONE;
     }
 }
