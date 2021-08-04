@@ -5,7 +5,7 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-declare module 'math-float64-ldexp' {
+declare module '@stdlib/math-base-special-ldexp' {
     function ldexp(mantissa: number, exponent: number): number;
 
     export = ldexp;

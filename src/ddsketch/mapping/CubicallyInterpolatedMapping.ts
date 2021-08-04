@@ -6,8 +6,8 @@
  */
 
 import { KeyMapping } from './KeyMapping';
-import frexp from 'math-float64-frexp';
-import ldexp from 'math-float64-ldexp';
+import frexp from '@stdlib/math-base-special-frexp';
+import ldexp from '@stdlib/math-base-special-ldexp';
 import { IndexMapping as IndexMappingProto } from '../proto/compiled';
 
 /**
