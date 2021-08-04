@@ -7,14 +7,18 @@ on: pull_request
 jobs:
   test-and-lint:
     name: Run tests and lint
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [12, 14, 16]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install node
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: ${{ matrix.node }}
       - run: yarn install
       - run: yarn lint
       - run: yarn typecheck
