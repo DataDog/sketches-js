@@ -31,7 +31,7 @@ export function frexp(value: number): [number, number] {
         mantissa = -mantissa;
     }
 
-    return [mantissa, exponent]
+    return [mantissa, exponent];
 }
 
 /**
