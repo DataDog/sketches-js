@@ -23,7 +23,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "yarn clean; tsc -p tsconfig.build.json",
+    "build": "yarn clean && tsc -p tsconfig.build.json",
     "clean": "rm -rf dist/*",
     "test": "jest",
     "lint": "eslint \"src/**/*.{js,ts}\"",
