@@ -148,6 +148,7 @@ class BaseDDSketch {
         this.store.merge(sketch.store);
 
         /* Merge summary stats */
+        this.zeroCount += sketch.zeroCount;
         this.count += sketch.count;
         this.sum += sketch.sum;
         if (sketch.min < this.min) {
