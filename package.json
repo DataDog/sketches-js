@@ -32,7 +32,7 @@
     "generate:proto": "pbjs -t static-module -w commonjs -o src/ddsketch/proto/compiled.js src/ddsketch/proto/DDSketch.proto && pbts -o src/ddsketch/proto/compiled.d.ts src/ddsketch/proto/compiled.js"
   },
   "dependencies": {
-    "protobufjs": "^6.10.2"
+    "protobufjs": "^6.11.3"
   },
   "devDependencies": {
     "@types/jest": "^26.0.14",
