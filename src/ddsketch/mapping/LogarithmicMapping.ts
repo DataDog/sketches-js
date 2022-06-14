@@ -28,6 +28,7 @@ export class LogarithmicMapping extends KeyMapping {
     }
 
     _protoInterpolation(): IndexMappingProto.Interpolation {
-        return IndexMappingProto.Interpolation.NONE;
+        const { Interpolation } = require('../proto/compiled').IndexMapping;
+        return Interpolation.NONE;
     }
 }

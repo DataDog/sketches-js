@@ -7,7 +7,7 @@
 
 import { sumOfRange } from './util';
 import type { Store } from './types';
-import { Store as ProtoStore, IStore } from '../proto/compiled';
+import { IStore } from '../proto/compiled';
 
 /** The default number of bins to grow when necessary */
 const CHUNK_SIZE = 128;
@@ -232,6 +232,7 @@ export class DenseStore implements Store<DenseStore> {
     }
 
     toProto(): IStore {
+        const ProtoStore = require('../proto/compiled').Store;
         return ProtoStore.create({
             contiguousBinCounts: this.bins,
             contiguousBinIndexOffset: this.offset

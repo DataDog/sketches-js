@@ -67,6 +67,7 @@ export class CubicallyInterpolatedMapping extends KeyMapping {
     }
 
     _protoInterpolation(): IndexMappingProto.Interpolation {
-        return IndexMappingProto.Interpolation.CUBIC;
+        const { Interpolation } = require('../proto/compiled').IndexMapping;
+        return Interpolation.CUBIC;
     }
 }

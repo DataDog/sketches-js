@@ -78,6 +78,7 @@ export class KeyMapping implements Mapping {
     }
 
     toProto(): IIndexMapping {
+        const ProtoIndexMapping = require('../proto/compiled').IndexMapping;
         return ProtoIndexMapping.create({
             gamma: this.gamma,
             indexOffset: this._offset,
@@ -96,17 +97,18 @@ export class KeyMapping implements Mapping {
             throw Error('Failed to decode mapping from protobuf');
         }
 
+        const { Interpolation } = require('../proto/compiled').IndexMapping;
         const { interpolation, gamma, indexOffset } = protoMapping;
 
         switch (interpolation) {
-            case ProtoIndexMapping.Interpolation.NONE:
+            case Interpolation.NONE:
                 return LogarithmicMapping.fromGammaOffset(gamma, indexOffset);
-            case ProtoIndexMapping.Interpolation.LINEAR:
+            case Interpolation.LINEAR:
                 return LinearlyInterpolatedMapping.fromGammaOffset(
                     gamma,
                     indexOffset
                 );
-            case ProtoIndexMapping.Interpolation.CUBIC:
+            case Interpolation.CUBIC:
                 return CubicallyInterpolatedMapping.fromGammaOffset(
                     gamma,
                     indexOffset
@@ -127,6 +129,7 @@ export class KeyMapping implements Mapping {
     }
 
     _protoInterpolation(): ProtoIndexMapping.Interpolation {
-        return ProtoIndexMapping.Interpolation.NONE;
+        const { Interpolation } = require('../proto/compiled').IndexMapping;
+        return Interpolation.NONE;
     }
 }

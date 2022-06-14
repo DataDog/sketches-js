@@ -50,6 +50,7 @@ export class LinearlyInterpolatedMapping extends KeyMapping {
     }
 
     _protoInterpolation(): IndexMappingProto.Interpolation {
-        return IndexMappingProto.Interpolation.LINEAR;
+        const { Interpolation } = require('../proto/compiled').IndexMapping;
+        return Interpolation.LINEAR;
     }
 }

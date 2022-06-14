@@ -31,9 +31,7 @@
     "typecheck": "tsc --noEmit",
     "generate:proto": "pbjs -t static-module -w commonjs -o src/ddsketch/proto/compiled.js src/ddsketch/proto/DDSketch.proto && pbts -o src/ddsketch/proto/compiled.d.ts src/ddsketch/proto/compiled.js"
   },
-  "dependencies": {
-    "protobufjs": "^6.11.3"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^26.0.14",
     "@typescript-eslint/eslint-plugin": "^4.2.0",
@@ -43,6 +41,7 @@
     "eslint-plugin-prettier": "^3.1.4",
     "jest": "^26.4.2",
     "prettier": "^2.1.2",
+    "protobufjs": "^6.11.3",
     "ts-jest": "^26.4.0",
     "typescript": "^4.0.3"
   }
