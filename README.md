@@ -10,10 +10,20 @@ The package is under [@datadog/sketches-js](https://www.npmjs.com/package/@datad
 
 ```sh
 # NPM
-npm install @datadog/sketches-js
+npm install --save @datadog/sketches-js
 
 # Yarn
 yarn add @datadog/sketches-js
+```
+
+When using Protobuf serialization, the [protobufjs](https://www.npmjs.com/package/protobufjs) module must also be installed manually:
+
+```sh
+# NPM
+npm install --save protobufjs
+
+# Yarn
+yarn add protobufjs
 ```
 
 ## Usage
