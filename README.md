@@ -16,6 +16,16 @@ npm install @datadog/sketches-js
 yarn add @datadog/sketches-js
 ```
 
+When using Protobuf serialization, the [protobufjs](https://www.npmjs.com/package/protobufjs) module must also be installed manually:
+
+```sh
+# NPM
+npm install protobufjs
+
+# Yarn
+yarn add protobufjs
+```
+
 ## Usage
 
 ### Initialize a sketch

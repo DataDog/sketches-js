@@ -7,7 +7,6 @@
 
 import { DenseStore } from './store';
 import { Mapping, KeyMapping, LogarithmicMapping } from './mapping';
-import { DDSketch as ProtoDDSketch } from './proto/compiled';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
 
@@ -186,6 +185,7 @@ class BaseDDSketch {
 
     /** Serialize a DDSketch to protobuf format */
     toProto(): Uint8Array {
+        const ProtoDDSketch = require('./proto/compiled').DDSketch;
         const message = ProtoDDSketch.create({
             mapping: this.mapping.toProto(),
             positiveValues: this.store.toProto(),
@@ -204,6 +204,7 @@ class BaseDDSketch {
      * @param buffer Byte array containing DDSketch in protobuf format (from DDSketch.toProto)
      */
     static fromProto(buffer: Uint8Array): DDSketch {
+        const ProtoDDSketch = require('./proto/compiled').DDSketch;
         const decoded = ProtoDDSketch.decode(buffer);
         const mapping = KeyMapping.fromProto(decoded.mapping);
         const store = DenseStore.fromProto(decoded.positiveValues);
