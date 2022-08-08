@@ -10,7 +10,7 @@ The package is under [@datadog/sketches-js](https://www.npmjs.com/package/@datad
 
 ```sh
 # NPM
-npm install --save @datadog/sketches-js
+npm install @datadog/sketches-js
 
 # Yarn
 yarn add @datadog/sketches-js
