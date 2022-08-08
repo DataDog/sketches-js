@@ -20,7 +20,7 @@ When using Protobuf serialization, the [protobufjs](https://www.npmjs.com/packag
 
 ```sh
 # NPM
-npm install --save protobufjs
+npm install protobufjs
 
 # Yarn
 yarn add protobufjs
