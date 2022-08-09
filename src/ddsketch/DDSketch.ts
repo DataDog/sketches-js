@@ -5,10 +5,15 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import { DenseStore } from './store';
+import {
+    DenseStore,
+    CollapsingLowestDenseStore,
+    CollapsingHighestDenseStore
+} from './store';
 import { Mapping, KeyMapping, LogarithmicMapping } from './mapping';
 
 const DEFAULT_RELATIVE_ACCURACY = 0.01;
+const DEFAULT_BIN_LIMIT = 2048;
 
 interface BaseSketchConfig {
     /** The mapping between values and indicies for the sketch */
@@ -239,6 +244,54 @@ export class DDSketch extends BaseDDSketch {
         const mapping = new LogarithmicMapping(relativeAccuracy);
         const store = new DenseStore();
         const negativeStore = new DenseStore();
+
+        super({ mapping, store, negativeStore, zeroCount: 0 });
+    }
+}
+
+interface LogCollapsingSketchConfig {
+    /** The accuracy guarantee of the sketch, between 0-1 (default 0.01) */
+    relativeAccuracy?: number;
+    binLimit?: number;
+}
+
+export class LogCollapsingLowestDenseDDSketch extends BaseDDSketch {
+    /**
+     * Initialize a new LogCollapsingLowestDenseDDSketch
+     *
+     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
+     * @param binLimit Number of bins before lowest indices are collapsed (default 2048)
+     */
+    constructor(
+        {
+            relativeAccuracy = DEFAULT_RELATIVE_ACCURACY,
+            binLimit = DEFAULT_BIN_LIMIT
+        } = defaultConfig as LogCollapsingSketchConfig
+    ) {
+        const mapping = new LogarithmicMapping(relativeAccuracy);
+        const store = new CollapsingLowestDenseStore(binLimit);
+        const negativeStore = new CollapsingLowestDenseStore(binLimit);
+
+        super({ mapping, store, negativeStore, zeroCount: 0 });
+    }
+}
+
+export class LogCollapsingHighestDenseDDSketch extends BaseDDSketch {
+    /**
+     * Initialize a new LogCollapsingHighestDenseDDSketch
+     *
+     * @param relativeAccuracy The accuracy guarantee of the sketch (default 0.01)
+     * @param binLimit Number of bins before highest indices are collapsed (default 2048)
+     */
+    constructor(
+        {
+            relativeAccuracy = DEFAULT_RELATIVE_ACCURACY,
+            binLimit = DEFAULT_BIN_LIMIT
+        } = defaultConfig as LogCollapsingSketchConfig
+    ) {
+        const mapping = new LogarithmicMapping(relativeAccuracy);
+        const store = new CollapsingHighestDenseStore(binLimit);
+        const negativeStore = new CollapsingHighestDenseStore(binLimit);
 
         super({ mapping, store, negativeStore, zeroCount: 0 });
     }

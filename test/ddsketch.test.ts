@@ -5,7 +5,11 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-import { DDSketch } from '../src/ddsketch';
+import {
+    DDSketch,
+    LogCollapsingHighestDenseDDSketch,
+    LogCollapsingLowestDenseDDSketch
+} from '../src/ddsketch';
 import {
     generateDecreasing,
     generateIncreasing,
@@ -37,7 +41,7 @@ const getQuantile = (data: number[], quantile: number) => {
     return sortedIncreasingData[rank];
 };
 
-describe('DDSketch', () => {
+function test(DDSketch: any) {
     const evaluateSketchAccuracy = (sketch: DDSketch, data: number[]) => {
         for (const quantile of testQuantiles) {
             const sketchQ = sketch.getValueAtQuantile(quantile);
@@ -226,4 +230,16 @@ describe('DDSketch', () => {
             evaluateSketchAccuracy(sketch2, [...data1, ...data2]);
         });
     });
+}
+
+describe('DDSketch', () => {
+    test(DDSketch)
+});
+
+describe('LogCollapsingHighestDenseDDSketch', () => {
+    test(LogCollapsingHighestDenseDDSketch)
+});
+
+describe('LogCollapsingLowestDenseDDSketch', () => {
+    test(LogCollapsingLowestDenseDDSketch)
 });

@@ -5,4 +5,4 @@
  * Copyright 2020 Datadog, Inc.
  */
 
-export { DDSketch } from './DDSketch';
+export * from './DDSketch';
