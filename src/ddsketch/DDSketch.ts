@@ -218,6 +218,111 @@ class BaseDDSketch {
 
         return new BaseDDSketch({ mapping, store, negativeStore, zeroCount });
     }
+
+    /**
+     * Serialize a DDSketch to JSON format as a compact tuple array
+     *
+     * Format: [gamma, indexOffset, positiveValues, negativeValues, zeroCount]
+     * - gamma: number - mapping gamma value
+     * - indexOffset: number - mapping index offset
+     * - positiveValues: [offset, [idx, count], ...] - sparse positive store
+     * - negativeValues: [offset, [idx, count], ...] - sparse negative store
+     * - zeroCount: number - count of zero values
+     *
+     * Stores use sparse representation where only non-zero bins are included
+     * as [index, count] pairs, with indices relative to the offset.
+     *
+     * Marked as unknown to signal it is meant to be considered opaque
+     */
+    toJSON(): unknown[] {
+        // Helper to create sparse representation: [offset, [idx, count], ...]
+        const sparseStore = (store: DenseStore): unknown[] => {
+            const result: unknown[] = [store.offset];
+            for (let i = 0; i < store.bins.length; i++) {
+                if (store.bins[i] > 0) {
+                    result.push([i, store.bins[i]]);
+                }
+            }
+            return result;
+        };
+
+        return [
+            this.mapping.gamma,
+            (this.mapping as KeyMapping)._offset,
+            sparseStore(this.store),
+            sparseStore(this.negativeStore),
+            this.zeroCount
+        ];
+    }
+
+    /**
+     * Deserialize a DDSketch from JSON tuple array
+     *
+     * Note: `fromJSON` currently loses summary statistics for the original
+     * sketch (i.e. `min`, `max`, `sum`, `count`)
+     *
+     * @param json Tuple array containing DDSketch data (from DDSketch.toJSON)
+     */
+    static fromJSON(json: unknown): DDSketch {
+        if (!Array.isArray(json) || json.length !== 5) {
+            throw new Error(
+                'Invalid JSON: expected array of length 5 [gamma, indexOffset, positiveValues, negativeValues, zeroCount]'
+            );
+        }
+
+        const [gamma, indexOffset, positiveValues, negativeValues, zeroCount] =
+            json;
+
+        if (typeof gamma !== 'number') {
+            throw new Error('Invalid JSON: gamma must be a number');
+        }
+
+        if (typeof indexOffset !== 'number') {
+            throw new Error('Invalid JSON: indexOffset must be a number');
+        }
+
+        if (!Array.isArray(positiveValues) || positiveValues.length === 0) {
+            throw new Error(
+                'Invalid JSON: positiveValues must be a non-empty array'
+            );
+        }
+
+        if (!Array.isArray(negativeValues) || negativeValues.length === 0) {
+            throw new Error(
+                'Invalid JSON: negativeValues must be a non-empty array'
+            );
+        }
+
+        if (typeof zeroCount !== 'number') {
+            throw new Error('Invalid JSON: zeroCount must be a number');
+        }
+
+        // Reconstruct the mapping
+        const mapping = LogarithmicMapping.fromGammaOffset(gamma, indexOffset);
+
+        // Helper to reconstruct store from sparse representation
+        const reconstructStore = (data: unknown[]): DenseStore => {
+            const store = new DenseStore();
+            const offset = data[0] as number;
+            store.offset = offset;
+
+            for (let i = 1; i < data.length; i++) {
+                const pair = data[i] as number[];
+                const [relativeIndex, count] = pair;
+                if (count > 0) {
+                    store.add(offset + relativeIndex, count);
+                }
+            }
+
+            return store;
+        };
+
+        // Reconstruct the stores
+        const store = reconstructStore(positiveValues);
+        const negativeStore = reconstructStore(negativeValues);
+
+        return new BaseDDSketch({ mapping, store, negativeStore, zeroCount });
+    }
 }
 
 interface SketchConfig {
