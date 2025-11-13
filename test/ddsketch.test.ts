@@ -123,6 +123,100 @@ function test(DDSketch: any) {
         evaluateSketchAccuracy(decodedProto, data);
     });
 
+    it('can be serialized to and from JSON', () => {
+        const data = generateIncreasing(100);
+        const sketch = new DDSketch({ relativeAccuracy });
+
+        for (const value of data) {
+            sketch.accept(value);
+        }
+
+        evaluateSketchAccuracy(sketch, data);
+
+        const json = sketch.toJSON();
+        const decodedJSON = DDSketch.fromJSON(json);
+
+        evaluateSketchAccuracy(decodedJSON, data);
+    });
+
+    it('produces the same quantiles after JSON round-trip as original', () => {
+        // Test with various datasets to ensure JSON serialization is lossless
+        const testCases = [
+            { name: 'random values', data: generateRandom(500) },
+            {
+                name: 'positive and negative',
+                data: generatePositiveAndNegative(500)
+            },
+            { name: 'constant values', data: generateConstant(100) },
+            { name: 'random integers', data: generateRandomIntegers(300) }
+        ];
+
+        for (const testCase of testCases) {
+            const sketch = new DDSketch({ relativeAccuracy });
+
+            for (const value of testCase.data) {
+                sketch.accept(value);
+            }
+
+            const json = sketch.toJSON();
+            const restored = DDSketch.fromJSON(json);
+
+            // Verify count matches
+            expect(restored.count).toEqual(sketch.count);
+
+            // Verify all quantiles match (within floating-point precision)
+            for (const quantile of testQuantiles) {
+                const original = sketch.getValueAtQuantile(quantile);
+                const restoredValue = restored.getValueAtQuantile(quantile);
+
+                // Quantiles should match within floating-point precision
+                // Allow small differences due to floating-point arithmetic
+                // during reconstruction - much smaller than the sketch's
+                // relative accuracy guarantee
+                if (!Number.isNaN(original)) {
+                    const relativeError =
+                        Math.abs(original - restoredValue) / Math.abs(original);
+                    expect(relativeError).toBeLessThan(1e-6);
+                } else {
+                    expect(restoredValue).toEqual(original);
+                }
+            }
+
+            // Also verify the restored sketch is accurate against the original data
+            evaluateSketchAccuracy(restored, testCase.data);
+        }
+    });
+
+    it('produces compact JSON representation', () => {
+        const sketch = new DDSketch({ relativeAccuracy });
+
+        // Add sparse data
+        sketch.accept(100);
+        sketch.accept(500);
+        sketch.accept(1000);
+
+        const json = sketch.toJSON();
+
+        // JSON should be an array of length 5
+        expect(Array.isArray(json)).toBe(true);
+        expect(json.length).toEqual(5);
+
+        // Verify structure: [gamma, indexOffset, positiveValues, negativeValues, zeroCount]
+        expect(typeof json[0]).toBe('number'); // gamma
+        expect(typeof json[1]).toBe('number'); // indexOffset
+        expect(Array.isArray(json[2])).toBe(true); // positiveValues
+        expect(Array.isArray(json[3])).toBe(true); // negativeValues
+        expect(typeof json[4]).toBe('number'); // zeroCount
+
+        // Positive values should be sparse: [offset, [idx, count], ...]
+        const positiveValues = json[2] as unknown[];
+        expect(positiveValues.length).toBeGreaterThan(0);
+        expect(typeof positiveValues[0]).toBe('number'); // offset
+
+        // Should only have non-zero bins (3 values = 3 non-zero bins)
+        expect(positiveValues.length).toBe(4); // offset + 3 sparse entries
+    });
+
     describe('datasets', () => {
         for (const dataset of datasets) {
             it(`is accurate for dataset '${dataset.name}'`, () => {
