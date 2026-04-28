@@ -5,13 +5,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v4
         with:
-          node-version: '12.x'
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
       - run: yarn
       - run: yarn pack
-      - run: yarn publish
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.YARN_NPM_AUTH_TOKEN }}
+      - run: npm publish
