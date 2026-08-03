@@ -48,6 +48,11 @@
   "resolutions": {
     "braces": "^3.0.3",
     "cross-spawn": "^6.0.6",
-    "semver": "^5.7.2"
+    "semver": "^5.7.2",
+    "@babel/helpers": "^7.29.7",
+    "tough-cookie": "^4.1.4",
+    "@babel/core": "^7.18.13",
+    "brace-expansion": "^1.1.18",
+    "word-wrap": "^1.2.5"
   }
 }
