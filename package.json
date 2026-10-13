@@ -23,7 +23,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "yarn clean; tsc -p tsconfig.build.json",
+    "build": "yarn clean && tsc -p tsconfig.build.json && cp src/ddsketch/proto/compiled.d.ts dist/ddsketch/proto/compiled.d.ts",
     "clean": "rm -rf dist/*",
     "test": "jest",
     "lint": "eslint \"src/**/*.{js,ts}\"",
@@ -31,7 +31,9 @@
     "typecheck": "tsc --noEmit",
     "generate:proto": "pbjs -t static-module -w commonjs -o src/ddsketch/proto/compiled.js src/ddsketch/proto/DDSketch.proto && pbts -o src/ddsketch/proto/compiled.d.ts src/ddsketch/proto/compiled.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "protobufjs": "^7.6.5"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.14",
     "@typescript-eslint/eslint-plugin": "^4.2.0",
@@ -41,7 +43,6 @@
     "eslint-plugin-prettier": "^3.1.4",
     "jest": "^26.4.2",
     "prettier": "^2.1.2",
-    "protobufjs": "^7.6.5",
     "ts-jest": "^26.4.0",
     "typescript": "^4.0.3"
   },
