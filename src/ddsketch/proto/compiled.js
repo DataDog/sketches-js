@@ -19,6 +19,9 @@ $root.DDSketch = (function() {
      * @property {IStore|null} [positiveValues] DDSketch positiveValues
      * @property {IStore|null} [negativeValues] DDSketch negativeValues
      * @property {number|null} [zeroCount] DDSketch zeroCount
+     * @property {number|null} [min] DDSketch min
+     * @property {number|null} [max] DDSketch max
+     * @property {number|null} [sum] DDSketch sum
      */
 
     /**
@@ -69,6 +72,30 @@ $root.DDSketch = (function() {
     DDSketch.prototype.zeroCount = 0;
 
     /**
+     * DDSketch min.
+     * @member {number} min
+     * @memberof DDSketch
+     * @instance
+     */
+    DDSketch.prototype.min = 0;
+
+    /**
+     * DDSketch max.
+     * @member {number} max
+     * @memberof DDSketch
+     * @instance
+     */
+    DDSketch.prototype.max = 0;
+
+    /**
+     * DDSketch sum.
+     * @member {number} sum
+     * @memberof DDSketch
+     * @instance
+     */
+    DDSketch.prototype.sum = 0;
+
+    /**
      * Creates a new DDSketch instance using the specified properties.
      * @function create
      * @memberof DDSketch
@@ -100,6 +127,12 @@ $root.DDSketch = (function() {
             $root.Store.encode(message.negativeValues, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         if (message.zeroCount != null && Object.hasOwnProperty.call(message, "zeroCount"))
             writer.uint32(/* id 4, wireType 1 =*/33).double(message.zeroCount);
+        if (message.min != null && Object.hasOwnProperty.call(message, "min"))
+            writer.uint32(/* id 5, wireType 1 =*/41).double(message.min);
+        if (message.max != null && Object.hasOwnProperty.call(message, "max"))
+            writer.uint32(/* id 6, wireType 1 =*/49).double(message.max);
+        if (message.sum != null && Object.hasOwnProperty.call(message, "sum"))
+            writer.uint32(/* id 7, wireType 1 =*/57).double(message.sum);
         return writer;
     };
 
@@ -145,6 +178,15 @@ $root.DDSketch = (function() {
                 break;
             case 4:
                 message.zeroCount = reader.double();
+                break;
+            case 5:
+                message.min = reader.double();
+                break;
+            case 6:
+                message.max = reader.double();
+                break;
+            case 7:
+                message.sum = reader.double();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -199,6 +241,15 @@ $root.DDSketch = (function() {
         if (message.zeroCount != null && message.hasOwnProperty("zeroCount"))
             if (typeof message.zeroCount !== "number")
                 return "zeroCount: number expected";
+        if (message.min != null && message.hasOwnProperty("min"))
+            if (typeof message.min !== "number")
+                return "min: number expected";
+        if (message.max != null && message.hasOwnProperty("max"))
+            if (typeof message.max !== "number")
+                return "max: number expected";
+        if (message.sum != null && message.hasOwnProperty("sum"))
+            if (typeof message.sum !== "number")
+                return "sum: number expected";
         return null;
     };
 
@@ -231,6 +282,12 @@ $root.DDSketch = (function() {
         }
         if (object.zeroCount != null)
             message.zeroCount = Number(object.zeroCount);
+        if (object.min != null)
+            message.min = Number(object.min);
+        if (object.max != null)
+            message.max = Number(object.max);
+        if (object.sum != null)
+            message.sum = Number(object.sum);
         return message;
     };
 
@@ -252,6 +309,9 @@ $root.DDSketch = (function() {
             object.positiveValues = null;
             object.negativeValues = null;
             object.zeroCount = 0;
+            object.min = 0;
+            object.max = 0;
+            object.sum = 0;
         }
         if (message.mapping != null && message.hasOwnProperty("mapping"))
             object.mapping = $root.IndexMapping.toObject(message.mapping, options);
@@ -261,6 +321,12 @@ $root.DDSketch = (function() {
             object.negativeValues = $root.Store.toObject(message.negativeValues, options);
         if (message.zeroCount != null && message.hasOwnProperty("zeroCount"))
             object.zeroCount = options.json && !isFinite(message.zeroCount) ? String(message.zeroCount) : message.zeroCount;
+        if (message.min != null && message.hasOwnProperty("min"))
+            object.min = options.json && !isFinite(message.min) ? String(message.min) : message.min;
+        if (message.max != null && message.hasOwnProperty("max"))
+            object.max = options.json && !isFinite(message.max) ? String(message.max) : message.max;
+        if (message.sum != null && message.hasOwnProperty("sum"))
+            object.sum = options.json && !isFinite(message.sum) ? String(message.sum) : message.sum;
         return object;
     };
 

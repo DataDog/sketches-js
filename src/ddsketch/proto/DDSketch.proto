@@ -22,6 +22,10 @@ message DDSketch {
 
   // The count for the value zero and its close neighborhood (whose width depends on the mapping).
   double zeroCount = 4;
+
+  double min = 5;
+  double max = 6;
+  double sum = 7;
 }
 
 // How to map positive values to the bins they belong to.

@@ -13,6 +13,15 @@ export interface IDDSketch {
 
     /** DDSketch zeroCount */
     zeroCount?: (number|null);
+
+    /** DDSketch min */
+    min?: (number|null);
+
+    /** DDSketch max */
+    max?: (number|null);
+
+    /** DDSketch sum */
+    sum?: (number|null);
 }
 
 /** Represents a DDSketch. */
@@ -35,6 +44,15 @@ export class DDSketch implements IDDSketch {
 
     /** DDSketch zeroCount. */
     public zeroCount: number;
+
+    /** DDSketch min. */
+    public min: number;
+
+    /** DDSketch max. */
+    public max: number;
+
+    /** DDSketch sum. */
+    public sum: number;
 
     /**
      * Creates a new DDSketch instance using the specified properties.
